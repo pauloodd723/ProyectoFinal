@@ -5,23 +5,47 @@ class AuthRepository {
 
   AuthRepository(this.account);
 
-  Future<void> createAccount({required String email, required String password, required String name}) async {
-    await account.create(userId: ID.unique(), email: email, password: password, name: name);
+  Future<void> createAccount({
+    required String email,
+    required String password,
+    required String name,
+  }) async {
+    try {
+      await account.create(
+        userId: ID.unique(),
+        email: email,
+        password: password,
+        name: name,
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> login({required String email, required String password}) async {
-    await account.createEmailPasswordSession(email: email, password: password);
+    try {
+      await account.createEmailPasswordSession(
+        email: email,
+        password: password,
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> logout() async {
-    await account.deleteSession(sessionId: 'current');
+    try {
+      await account.deleteSession(sessionId: 'current');
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<bool> isLoggedIn() async {
     try {
       await account.get();
       return true;
-    } catch (_) {
+    } catch (e) {
       return false;
     }
   }

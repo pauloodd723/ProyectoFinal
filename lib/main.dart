@@ -8,6 +8,7 @@ import 'package:proyecto_final/controllers/auth_controller.dart';
 import 'package:proyecto_final/controllers/user_controller.dart';
 import 'package:proyecto_final/data/repositories/user_repository.dart';
 import 'package:proyecto_final/presentation/pages/splash_page.dart';
+import 'package:proyecto_final/presentation/pages/start_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,7 +41,7 @@ class MyApp extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
         useMaterial3: false,
       ),
-      home: SplashPage(),
+      home: StartPage(),
     );
   }
 }

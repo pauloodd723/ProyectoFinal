@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 import 'package:proyecto_final/data/repositories/auth_repository.dart';
-import 'package:proyecto_final/presentation/pages/home_page.dart';
 import 'package:proyecto_final/presentation/pages/login_page.dart';
+import 'package:proyecto_final/presentation/pages/start_page.dart';
 
 class AuthController extends GetxController {
   final AuthRepository _authRepository;
@@ -25,9 +25,10 @@ class AuthController extends GetxController {
   Future<void> login(String email, String password) async {
     isLoading.value = true;
     error.value = '';
+
     try {
       await _authRepository.login(email: email, password: password);
-      Get.offAll(() => HomePage());
+      Get.offAll(() => StartPage());
     } catch (e) {
       error.value = e.toString();
     } finally {
@@ -38,8 +39,13 @@ class AuthController extends GetxController {
   Future<void> register(String email, String password, String name) async {
     isLoading.value = true;
     error.value = '';
+
     try {
-      await _authRepository.createAccount(email: email, password: password, name: name);
+      await _authRepository.createAccount(
+        email: email,
+        password: password,
+        name: name,
+      );
       await login(email, password);
     } catch (e) {
       error.value = e.toString();

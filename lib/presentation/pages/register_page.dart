@@ -15,74 +15,92 @@ class RegisterPage extends StatelessWidget {
     final authController = Get.find<AuthController>();
 
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/register.jpg'),
+            fit: BoxFit.cover,
+          ),
+        ),
         child: Center(
           child: SingleChildScrollView(
-            child: Column(
-              children: [
-                Image.asset('assets/images/logo.png', height: 120),
-                SizedBox(height: 10),
-                Text('GameShop', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-                SizedBox(height: 30),
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        controller: _usernameController,
-                        decoration: InputDecoration(labelText: 'Nombre de usuario'),
-                        validator: (value) => value!.isEmpty ? 'Campo requerido' : null,
-                      ),
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: InputDecoration(labelText: 'Correo'),
-                        validator: (value) {
-                          if (value!.isEmpty) return 'Campo requerido';
-                          if (!GetUtils.isEmail(value)) return 'Correo inválido';
-                          return null;
-                        },
-                      ),
-                      TextFormField(
-                        controller: _passwordController,
-                        decoration: InputDecoration(labelText: 'Contraseña'),
-                        obscureText: true,
-                        validator: (value) {
-                          if (value!.isEmpty) return 'Campo requerido';
-                          if (value.length < 6) return 'Mínimo 6 caracteres';
-                          return null;
-                        },
-                      ),
-                      SizedBox(height: 20),
-                      Obx(() => authController.isLoading.value
-                          ? CircularProgressIndicator()
-                          : ElevatedButton(
-                              onPressed: () {
-                                if (_formKey.currentState!.validate()) {
-                                  authController.register(
-                                    _emailController.text,
-                                    _passwordController.text,
-                                    _usernameController.text,
-                                  );
-                                }
-                              },
-                              child: Text('Registrarse'),
-                            )),
-                      TextButton(
-                        onPressed: () => Get.back(),
-                        child: Text('¿Ya tienes cuenta? Inicia sesión'),
-                      ),
-                      Obx(() => authController.error.value.isNotEmpty
-                          ? Text(authController.error.value, style: TextStyle(color: Colors.red))
-                          : SizedBox.shrink()),
-                    ],
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Text(
+                    'Register GameShopX',
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
-                ),
-              ],
+                  SizedBox(height: 30),
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: Colors.white),
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          _buildTextField(_usernameController, 'Nombre de usuario'),
+                          SizedBox(height: 16),
+                          _buildTextField(_emailController, 'Correo'),
+                          SizedBox(height: 16),
+                          _buildTextField(_passwordController, 'Contraseña', obscure: true),
+                          SizedBox(height: 20),
+                          Obx(() => authController.isLoading.value
+                              ? CircularProgressIndicator()
+                              : ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white.withOpacity(0.2),
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  onPressed: () {
+                                    if (_formKey.currentState!.validate()) {
+                                      authController.register(
+                                        _emailController.text,
+                                        _passwordController.text,
+                                        _usernameController.text,
+                                      );
+                                    }
+                                  },
+                                  child: Text('Registrarse'),
+                                )),
+                          TextButton(
+                            onPressed: () => Get.back(),
+                            child: Text('¿Ya tienes cuenta? Inicia sesión', style: TextStyle(color: Colors.white)),
+                          ),
+                          Obx(() => authController.error.value.isNotEmpty
+                              ? Text(authController.error.value, style: TextStyle(color: Colors.red))
+                              : SizedBox.shrink()),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label, {bool obscure = false}) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscure,
+      style: TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.white),
+        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+        border: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+      ),
+      validator: (value) => value!.isEmpty ? 'Campo requerido' : null,
     );
   }
 }
