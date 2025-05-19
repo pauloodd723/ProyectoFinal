@@ -1,16 +1,20 @@
-// lib/models/game_listing_model.dart // Si usaras Timestamp, sino puedes quitarlo. Appwrite usa Strings para fechas.
+// lib/model/game_listing_model.dart
+import 'package:proyecto_final/core/constants/appwrite_constants.dart';
 
 class GameListingModel {
-  final String id; // Document ID de Appwrite ($id)
+  final String id;
   final String title;
   final double price;
   final String sellerName;
   final String sellerId;
-  final String? imageUrl;
+  final String? imageUrl; // Se espera que este campo SIEMPRE contenga un File ID de Appwrite Storage
   final String? description;
   final String? gameCondition;
   final String status;
-  final DateTime? createdAt; // Appwrite usa $createdAt (String)
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  String? _constructedDisplayImageUrl; // Renombrado para claridad
 
   GameListingModel({
     required this.id,
@@ -23,13 +27,14 @@ class GameListingModel {
     this.gameCondition,
     this.status = 'disponible',
     this.createdAt,
+    this.updatedAt,
   });
 
   factory GameListingModel.fromJson(Map<String, dynamic> json) {
     return GameListingModel(
-      id: json['\$id'], // ID del documento de Appwrite
+      id: json['\$id'],
       title: json['title'],
-      price: (json['price'] as num).toDouble(), // Asegurar que sea double
+      price: (json['price'] as num).toDouble(),
       sellerName: json['sellerName'],
       sellerId: json['sellerId'],
       imageUrl: json['imageUrl'],
@@ -37,7 +42,10 @@ class GameListingModel {
       gameCondition: json['gameCondition'],
       status: json['status'] ?? 'disponible',
       createdAt: json['\$createdAt'] != null
-          ? DateTime.tryParse(json['\$createdAt']) // Appwrite devuelve fechas como String ISO 8601
+          ? DateTime.tryParse(json['\$createdAt'])
+          : null,
+      updatedAt: json['\$updatedAt'] != null
+          ? DateTime.tryParse(json['\$updatedAt'])
           : null,
     );
   }
@@ -52,7 +60,78 @@ class GameListingModel {
       if (description != null) 'description': description,
       if (gameCondition != null) 'gameCondition': gameCondition,
       'status': status,
-      // No incluimos id ni createdAt en toJson para creación, Appwrite los maneja.
     };
+  }
+
+  // MODIFICADO: Renombrado a getDisplayImageUrl y usa el endpoint /view
+  // Ya no acepta parámetros de width, height, quality ya que /view sirve el original.
+  String? getDisplayImageUrl() {
+    print("--- [GameListingModel.getDisplayImageUrl] DEBUG ---");
+    print("Intentando obtener URL para el objeto con título: '${this.title}'");
+    print("Valor actual de this.imageUrl (debería ser un File ID): '${this.imageUrl}'");
+    print("----------------------------------------------------");
+
+    if (_constructedDisplayImageUrl != null) {
+      print("[GameListingModel.getDisplayImageUrl] Devolviendo URL cacheada: $_constructedDisplayImageUrl");
+      return _constructedDisplayImageUrl;
+    }
+
+    if (this.imageUrl == null || this.imageUrl!.isEmpty) {
+      print("[GameListingModel.getDisplayImageUrl] this.imageUrl es null o vacío. No se puede construir URL.");
+      return null;
+    }
+
+    try {
+      // Construir la URL usando el endpoint /view y solo el project ID
+      List<String> queryParams = ['project=${AppwriteConstants.projectId}'];
+      
+      String constructedUrl =
+          "${AppwriteConstants.endpoint}/storage/buckets/${AppwriteConstants.gameImagesBucketId}/files/${this.imageUrl}/view?${queryParams.join('&')}";
+      
+      // Limpieza por si acaso
+      if (constructedUrl.endsWith('&')) {
+        constructedUrl = constructedUrl.substring(0, constructedUrl.length -1);
+      }
+       if (!constructedUrl.contains('?')) { 
+             constructedUrl = constructedUrl.replaceFirst('&', '?');
+      }
+
+      _constructedDisplayImageUrl = constructedUrl;
+      
+      print("[GameListingModel.getDisplayImageUrl] URL con /view de Appwrite construida: $_constructedDisplayImageUrl");
+      return _constructedDisplayImageUrl;
+
+    } catch (e) {
+      print("[GameListingModel.getDisplayImageUrl] Error construyendo URL con /view para File ID ${this.imageUrl}: $e");
+      return null;
+    }
+  }
+
+  GameListingModel copyWith({
+    String? id,
+    String? title,
+    double? price,
+    String? sellerName,
+    String? sellerId,
+    String? imageUrl,
+    String? description,
+    String? gameCondition,
+    String? status,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return GameListingModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      price: price ?? this.price,
+      sellerName: sellerName ?? this.sellerName,
+      sellerId: sellerId ?? this.sellerId,
+      imageUrl: imageUrl ?? this.imageUrl,
+      description: description ?? this.description,
+      gameCondition: gameCondition ?? this.gameCondition,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
   }
 }
