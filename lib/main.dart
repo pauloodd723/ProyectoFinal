@@ -2,75 +2,82 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:appwrite/appwrite.dart';
-import 'package:intl/date_symbol_data_local.dart'; // Para inicializar formatos de fecha locales
+import 'package:intl/date_symbol_data_local.dart'; // Para formato de fechas
 
+// Configuración y Constantes
 import 'package:proyecto_final/core/config/app_config.dart';
+
+// Repositorios
 import 'package:proyecto_final/data/repositories/auth_repository.dart';
-import 'package:proyecto_final/controllers/auth_controller.dart';
-import 'package:proyecto_final/controllers/user_controller.dart'; // Aunque no se usa directamente, es bueno tenerlo si se expande
 import 'package:proyecto_final/data/repositories/user_repository.dart';
-
 import 'package:proyecto_final/data/repositories/game_listing_repository.dart';
+import 'package:proyecto_final/data/repositories/notification_repository.dart';
+import 'package:proyecto_final/data/repositories/purchase_history_repository.dart';
+
+// Controladores
+import 'package:proyecto_final/controllers/auth_controller.dart';
+import 'package:proyecto_final/controllers/user_controller.dart';
 import 'package:proyecto_final/controllers/game_listing_controller.dart';
-import 'package:proyecto_final/presentation/pages/start_page.dart'; // Página inicial
-import 'package:proyecto_final/presentation/pages/home_page.dart'; // Página principal si está logueado
-import 'package:proyecto_final/presentation/pages/login_page.dart'; // Página de login si no está logueado
+import 'package:proyecto_final/controllers/notification_controller.dart';
 
-void main() async { // Convertido a async para await
+// Páginas
+import 'package:proyecto_final/presentation/pages/start_page.dart';
+import 'package:proyecto_final/presentation/pages/home_page.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Para formatos de fecha en español (Colombia en este caso)
   await initializeDateFormatting('es_CO', null);
 
-
-  // Configuración de Appwrite
   final client = AppwriteConfig.initClient();
   final databases = Databases(client);
   final account = Account(client);
-  final storage = Storage(client); // NUEVO: Instancia de Storage
+  final storage = Storage(client);
 
-  // Dependencias de Autenticación
-  Get.put(AuthRepository(account));
-  // Inyectar AuthController y esperar a que cargue el usuario antes de decidir la página inicial
-  final AuthController authController = Get.put(AuthController(Get.find()));
+  // --- INYECCIÓN DE DEPENDENCIAS CON GetX (ORDEN CORREGIDO) ---
 
-
-  // Dependencias de Usuarios (si se usan extensivamente en el futuro)
+  // 1. Repositorios (no dependen de otros controladores para su construcción)
+  Get.put(AuthRepository(account, storage));
   Get.put(UserRepository(databases));
-  Get.put(UserController(repository: Get.find()));
+  Get.put(GameListingRepository(databases, storage));
+  Get.put(NotificationRepository(databases));
+  Get.put(PurchaseHistoryRepository(databases));
 
-  // Dependencias de Listados de Juegos
-  // MODIFICADO: Pasar storage al repositorio
-  Get.put(GameListingRepository(databases, storage)); 
-  Get.put(GameListingController(repository: Get.find()));
+  // 2. Controladores que SÓLO dependen de Repositorios (o de nada para su construcción)
+  //    Y que NO dependen de AuthController en su inicialización inmediata.
+  Get.put(GameListingController(repository: Get.find<GameListingRepository>()));
+  
+  // 3. AuthController (depende de AuthRepository).
+  //    Es importante ponerlo aquí porque otros controladores (UserController, NotificationController)
+  //    pueden depender de él y lo buscarán en su onInit.
+  final AuthController authController = Get.put(AuthController(Get.find<AuthRepository>()));
 
-  runApp(MyAppLoader(authController: authController)); // Pasa el authController
+  // 4. Otros controladores que pueden depender de AuthController y/o sus propios repositorios.
+  //    UserController ahora se pone DESPUÉS de AuthController.
+  Get.put(UserController(repository: Get.find<UserRepository>()));
+  Get.put(NotificationController(Get.find<NotificationRepository>()));
+
+
+  runApp(MyAppLoader(authController: authController));
 }
 
-
-// NUEVO: Widget para manejar la carga inicial y decidir la página
+// --- MyAppLoader y el resto del archivo como estaba ---
 class MyAppLoader extends StatelessWidget {
   final AuthController authController;
+
   const MyAppLoader({super.key, required this.authController});
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() { // Obx para reaccionar a los cambios de isLoading en AuthController
+    return Obx(() {
       Widget homeWidget;
       if (authController.isLoading.value && authController.appwriteUser.value == null) {
-        // Muestra un splash screen o loading mientras se verifica el estado de auth
         homeWidget = const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         );
       } else if (authController.isUserLoggedIn) {
         homeWidget = HomePage();
       } else {
-        // Si no está logueado (o después del primer chequeo isLoading es false y no hay usuario)
-        // Podrías tener una StartPage que luego lleve a Login/Register, o directamente a Login.
-        // Por simplicidad, si no hay usuario después de la carga inicial, vamos a StartPage.
-        // Si _loadCurrentUserOnStartup ya navegó, esta lógica podría no ser necesaria aquí.
-        // Pero es una buena guarda.
-        homeWidget = const StartPage(); 
+        homeWidget = const StartPage();
       }
 
       return GetMaterialApp(
@@ -85,87 +92,72 @@ class MyAppLoader extends StatelessWidget {
             seedColor: Colors.deepPurple,
             brightness: Brightness.dark,
             primary: Colors.deepPurpleAccent,
-            secondary: Colors.tealAccent, // Un color secundario para acentos
+            secondary: Colors.tealAccent,
             error: Colors.redAccent,
           ),
           inputDecorationTheme: InputDecorationTheme(
             filled: true,
-            fillColor: Colors.white.withOpacity(0.05), // Más sutil para tema oscuro
-             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12), // Más redondeado
+            fillColor: Colors.white.withOpacity(0.05),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
-            enabledBorder: OutlineInputBorder( // Borde cuando no está enfocado
+            enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
             ),
-            focusedBorder: OutlineInputBorder( // Borde cuando está enfocado
+            focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.deepPurpleAccent, width: 1.5),
             ),
             labelStyle: TextStyle(color: Colors.grey[400]),
-            hintStyle: TextStyle(color: Colors.grey[500]), // Un poco más oscuro para hints
+            hintStyle: TextStyle(color: Colors.grey[500]),
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurpleAccent,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), // Un poco más de padding
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10), // Consistente con inputs
-              ),
-              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)
-            ),
+                backgroundColor: Colors.deepPurpleAccent,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                textStyle:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           ),
           textButtonTheme: TextButtonThemeData(
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.tealAccent, // Usar color secundario
-               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            )
-          ),
-          cardTheme: CardTheme( // Estilo para las tarjetas
+              style: TextButton.styleFrom(
+            foregroundColor: Colors.tealAccent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          )),
+          cardTheme: CardTheme(
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            color: Colors.grey[850], // Un color de fondo para las tarjetas en tema oscuro
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            color: Colors.grey[850],
           ),
           floatingActionButtonTheme: FloatingActionButtonThemeData(
             backgroundColor: Colors.tealAccent,
             foregroundColor: Colors.black87,
           ),
-          dialogTheme: DialogTheme( // Estilo para diálogos
+          appBarTheme: AppBarTheme(
+            backgroundColor: Colors.grey[900],
+            elevation: 0,
+          ),
+          dialogTheme: DialogTheme(
             backgroundColor: Colors.grey[850],
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-            contentTextStyle: const TextStyle(color: Colors.white70, fontSize: 16),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            titleTextStyle: const TextStyle(
+                color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            contentTextStyle:
+                const TextStyle(color: Colors.white70, fontSize: 16),
           )
         ),
         home: homeWidget,
-        // No necesitas definir initialBinding si los pones directamente en main()
-        // initialBinding: AppBindings(), // Si prefieres usar Bindings
       );
     });
   }
 }
-
-// Opcional: Si quieres usar Bindings para organizar dependencias
-// class AppBindings extends Bindings {
-//   @override
-//   void dependencies() {
-//     // Ya están en main, pero si los mueves aquí:
-//     // final client = AppwriteConfig.initClient();
-//     // final databases = Databases(client);
-//     // final account = Account(client);
-//     // final storage = Storage(client);
-
-//     // Get.put(AuthRepository(account));
-//     // Get.put(AuthController(Get.find()), permanent: true); // permanent si es necesario
-
-//     // Get.put(UserRepository(databases));
-//     // Get.put(UserController(repository: Get.find()));
-
-//     // Get.put(GameListingRepository(databases, storage));
-//     // Get.put(GameListingController(repository: Get.find()));
-//   }
-// }

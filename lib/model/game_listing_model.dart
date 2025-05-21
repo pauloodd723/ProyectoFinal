@@ -7,14 +7,14 @@ class GameListingModel {
   final double price;
   final String sellerName;
   final String sellerId;
-  final String? imageUrl; // Se espera que este campo SIEMPRE contenga un File ID de Appwrite Storage
+  final String? imageUrl;
   final String? description;
   final String? gameCondition;
-  final String status;
+  final String status; // available, sold, etc.
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  String? _constructedDisplayImageUrl; // Renombrado para claridad
+  String? _constructedDisplayImageUrl;
 
   GameListingModel({
     required this.id,
@@ -25,7 +25,7 @@ class GameListingModel {
     this.imageUrl,
     this.description,
     this.gameCondition,
-    this.status = 'disponible',
+    this.status = 'available', // Default status
     this.createdAt,
     this.updatedAt,
   });
@@ -40,7 +40,7 @@ class GameListingModel {
       imageUrl: json['imageUrl'],
       description: json['description'],
       gameCondition: json['gameCondition'],
-      status: json['status'] ?? 'disponible',
+      status: json['status'] ?? 'available', // Ensure status is parsed
       createdAt: json['\$createdAt'] != null
           ? DateTime.tryParse(json['\$createdAt'])
           : null,
@@ -59,13 +59,12 @@ class GameListingModel {
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (description != null) 'description': description,
       if (gameCondition != null) 'gameCondition': gameCondition,
-      'status': status,
+      'status': status, // Ensure status is included
     };
   }
 
-  // MODIFICADO: Renombrado a getDisplayImageUrl y usa el endpoint /view
-  // Ya no acepta parámetros de width, height, quality ya que /view sirve el original.
   String? getDisplayImageUrl() {
+    // ... (no change to this method)
     print("--- [GameListingModel.getDisplayImageUrl] DEBUG ---");
     print("Intentando obtener URL para el objeto con título: '${this.title}'");
     print("Valor actual de this.imageUrl (debería ser un File ID): '${this.imageUrl}'");
@@ -82,18 +81,16 @@ class GameListingModel {
     }
 
     try {
-      // Construir la URL usando el endpoint /view y solo el project ID
       List<String> queryParams = ['project=${AppwriteConstants.projectId}'];
       
       String constructedUrl =
           "${AppwriteConstants.endpoint}/storage/buckets/${AppwriteConstants.gameImagesBucketId}/files/${this.imageUrl}/view?${queryParams.join('&')}";
       
-      // Limpieza por si acaso
       if (constructedUrl.endsWith('&')) {
         constructedUrl = constructedUrl.substring(0, constructedUrl.length -1);
       }
-       if (!constructedUrl.contains('?')) { 
-             constructedUrl = constructedUrl.replaceFirst('&', '?');
+        if (!constructedUrl.contains('?')) { 
+                constructedUrl = constructedUrl.replaceFirst('&', '?');
       }
 
       _constructedDisplayImageUrl = constructedUrl;
@@ -107,6 +104,7 @@ class GameListingModel {
     }
   }
 
+
   GameListingModel copyWith({
     String? id,
     String? title,
@@ -116,7 +114,7 @@ class GameListingModel {
     String? imageUrl,
     String? description,
     String? gameCondition,
-    String? status,
+    String? status, // Add status
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -129,7 +127,7 @@ class GameListingModel {
       imageUrl: imageUrl ?? this.imageUrl,
       description: description ?? this.description,
       gameCondition: gameCondition ?? this.gameCondition,
-      status: status ?? this.status,
+      status: status ?? this.status, // Add status
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

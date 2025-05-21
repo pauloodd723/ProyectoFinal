@@ -7,6 +7,9 @@ import 'package:proyecto_final/controllers/game_listing_controller.dart';
 import 'package:proyecto_final/model/game_listing_model.dart';
 import 'package:proyecto_final/presentation/pages/edit_listing_page.dart';
 import 'package:proyecto_final/presentation/pages/purchase_page.dart';
+// Asegúrate que esta importación sea correcta para tu estructura de archivos
+import 'package:proyecto_final/presentation/pages/seller_profile_page.dart';
+
 
 class GameListingItem extends StatelessWidget {
   final GameListingModel listing;
@@ -19,9 +22,10 @@ class GameListingItem extends StatelessWidget {
     final GameListingController gameListingController = Get.find();
     final bool isOwner = authController.currentUserId == listing.sellerId;
 
-    // Obtener la URL de la imagen usando el método del modelo.
-    // Ya no se pasan width/height/quality debido a las limitaciones del plan de Appwrite.
     final String? imageUrl = listing.getDisplayImageUrl();
+
+    // DEBUG PRINT PARA PROBLEMA 1 (BOTÓN COMPRAR) - (Puedes quitarlo si ya solucionaste eso)
+    // print('DEBUG GameListingItem: ID=${listing.id}, Title=${listing.title}, Status=${listing.status}');
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
@@ -45,20 +49,20 @@ class GameListingItem extends StatelessWidget {
                           return Center(
                             child: CircularProgressIndicator(
                               value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
                                   : null,
                             ),
                           );
                         },
                         errorBuilder: (context, error, stackTrace) {
-                           print("Error cargando imagen de red ($imageUrl): $error");
-                           return Container(
+                          print("Error cargando imagen de red ($imageUrl): $error");
+                          return Container(
                             color: Colors.grey[800],
                             child: Icon(Icons.broken_image, color: Colors.grey[600], size: 40),
                             alignment: Alignment.center,
                           );
-                        }
-                      )
+                        })
                     : Container(
                         color: Colors.grey[800],
                         child: Icon(Icons.image_not_supported, color: Colors.grey[600], size: 40),
@@ -82,10 +86,35 @@ class GameListingItem extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 4),
-            Text(
-              'Vendido por: ${listing.sellerName}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[400]),
+            
+            InkWell(
+              onTap: () {
+                // --- ESTA ES LA LÍNEA DE PRINT AÑADIDA PARA EL PASO 1 DEL DIAGNÓSTICO DEL PROBLEMA 2 ---
+                print("[GameListingItem onTap Seller] Intentando ver perfil del vendedor con ID: '${listing.sellerId}', Nombre: '${listing.sellerName}'");
+                // --- FIN DE LA LÍNEA DE PRINT ---
+
+                if (listing.sellerId.isNotEmpty) {
+                  Get.to(() => SellerProfilePage(
+                        sellerId: listing.sellerId,
+                        sellerName: listing.sellerName,
+                      ));
+                } else {
+                  Get.snackbar("Información", "ID del vendedor no disponible.");
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Text(
+                  'Vendido por: ${listing.sellerName}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.secondary, 
+                        decoration: TextDecoration.underline, 
+                        decorationColor: Theme.of(context).colorScheme.secondary,
+                      ),
+                ),
+              ),
             ),
+
             if (listing.gameCondition != null && listing.gameCondition!.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(
@@ -94,6 +123,20 @@ class GameListingItem extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 10),
+
+            if (!isOwner && listing.status == 'sold')
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Text(
+                  'VENDIDO',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+
             if (isOwner)
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -111,42 +154,40 @@ class GameListingItem extends StatelessWidget {
                     label: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
                     onPressed: () async {
                       Get.defaultDialog(
-                        title: "Confirmar Eliminación",
-                        middleText: "¿Estás seguro de que quieres eliminar este artículo: ${listing.title}?",
-                        textConfirm: "Eliminar",
-                        textCancel: "Cancelar",
-                        confirmTextColor: Colors.white,
-                        buttonColor: Theme.of(context).colorScheme.error,
-                        onConfirm: () async {
-                          Get.back();
-                          // Se pasa listing.imageUrl (que es el ID del archivo en Storage)
-                          await gameListingController.deleteListing(listing.id, listing.imageUrl);
-                           if (gameListingController.error.value.isNotEmpty) {
-                                Get.snackbar("Error", "No se pudo eliminar el artículo: ${gameListingController.error.value}",
-                                snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white);
+                          title: "Confirmar Eliminación",
+                          middleText: "¿Estás seguro de que quieres eliminar este artículo: ${listing.title}?",
+                          textConfirm: "Eliminar",
+                          textCancel: "Cancelar",
+                          confirmTextColor: Colors.white,
+                          buttonColor: Theme.of(context).colorScheme.error,
+                          onConfirm: () async {
+                            Get.back();
+                            await gameListingController.deleteListing(listing.id, listing.imageUrl);
+                            if (gameListingController.error.value.isNotEmpty) {
+                              Get.snackbar("Error", "No se pudo eliminar el artículo: ${gameListingController.error.value}",
+                                  snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white);
                             } else {
-                                Get.snackbar("Éxito", "Artículo eliminado.",
-                                snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.green, colorText: Colors.white);
+                              Get.snackbar("Éxito", "Artículo eliminado.",
+                                  snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.green, colorText: Colors.white);
                             }
-                        }
-                      );
+                          });
                     },
                   ),
                 ],
               )
-            else
+            else if (listing.status == 'available') 
               Align(
                 alignment: Alignment.centerRight,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.shopping_cart_checkout),
                   label: const Text('Comprar'),
                   onPressed: () {
-                     if (!authController.isUserLoggedIn) {
-                        Get.snackbar(
-                            "Acción Requerida", "Debes iniciar sesión para comprar artículos.",
-                            snackPosition: SnackPosition.BOTTOM);
-                        return;
-                      }
+                    if (!authController.isUserLoggedIn) {
+                      Get.snackbar(
+                          "Acción Requerida", "Debes iniciar sesión para comprar artículos.",
+                          snackPosition: SnackPosition.BOTTOM);
+                      return;
+                    }
                     Get.to(() => PurchasePage(listing: listing));
                   },
                   style: ElevatedButton.styleFrom(
