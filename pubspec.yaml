@@ -10,7 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  
+  flutter_map: ^6.1.0
+  http: ^1.2.0
+  latlong2: ^0.9.1
   cupertino_icons: ^1.0.8
   get: ^4.7.2
   appwrite: ^15.0.2 # Mantén tu versión de appwrite

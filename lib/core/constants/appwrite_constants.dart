@@ -12,6 +12,9 @@ class AppwriteConstants {
   static const String notificationsCollectionId = '682d16800000235fb2ea'; // REPLACE
   static const String purchaseHistoryCollectionId = '682d18af0018df461550'; // REPLACE
 
+  static const String chatsCollectionId = '68333b840006884d8183';         // <<--- REEMPLAZA ESTO
+  static const String messagesCollectionId = '683341df0025f6de7c32';   // <<--- REEMPLAZA ESTO
+
   // Storage Bucket ID
   static const String gameImagesBucketId = '682a50cd0005f389086b';
 }

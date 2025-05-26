@@ -9,6 +9,8 @@ import 'package:proyecto_final/controllers/notification_controller.dart';
 import 'package:proyecto_final/controllers/game_listing_controller.dart';
 import 'package:proyecto_final/data/repositories/purchase_history_repository.dart';
 import 'package:proyecto_final/presentation/pages/home_page.dart';
+import 'package:proyecto_final/model/user_model.dart'; // Necesario para UserModel
+import 'package:proyecto_final/data/repositories/user_repository.dart'; // Necesario para UserRepository
 
 class PurchasePage extends StatefulWidget {
   final GameListingModel listing;
@@ -30,6 +32,7 @@ class _PurchasePageState extends State<PurchasePage> {
   final NotificationController _notificationController = Get.find();
   final GameListingController _gameListingController = Get.find();
   final PurchaseHistoryRepository _purchaseHistoryRepository = Get.find();
+  final UserRepository _userRepository = Get.find(); // Para obtener perfil del vendedor
 
   bool _isProcessingPayment = false;
 
@@ -85,11 +88,8 @@ class _PurchasePageState extends State<PurchasePage> {
       return;
     }
 
-    setState(() {
-      _isProcessingPayment = true;
-    });
+    setState(() { _isProcessingPayment = true; });
 
-    // --- CORRECCIÓN APLICADA AQUÍ ---
     Get.dialog(
       AlertDialog(
         title: const Text('Procesando Pago...'),
@@ -104,24 +104,20 @@ class _PurchasePageState extends State<PurchasePage> {
       ),
       barrierDismissible: false,
     );
-    // --- FIN DE LA CORRECCIÓN ---
-
-    await Future.delayed(const Duration(seconds: 3));
+    
+    await Future.delayed(const Duration(seconds: 3)); 
 
     if (Get.isDialogOpen ?? false) {
-      Get.back();
+      Get.back(); 
     }
 
     final String? buyerId = _authController.currentUserId;
-    final String? buyerName = _authController.currentUserName;
+    final String? buyerName = _authController.localUser.value?.username ?? _authController.currentUserName;
 
     if (buyerId == null || buyerName == null) {
       Get.snackbar(
-        "Error",
-        "No se pudo obtener la información del comprador. Intenta iniciar sesión de nuevo.",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        "Error", "No se pudo obtener la información del comprador. Intenta iniciar sesión de nuevo.",
+        snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white,
       );
       setState(() { _isProcessingPayment = false; });
       return;
@@ -131,27 +127,12 @@ class _PurchasePageState extends State<PurchasePage> {
     if (_selectedCouponMap != null) {
       couponUsedSuccessfully = await _authController.useCoupon(_selectedCouponMap!['id']);
       if (!couponUsedSuccessfully) {
-        print("[PurchasePage] ADVERTENCIA: No se pudo marcar el cupón como usado. La compra procederá con el descuento visual pero el cupón podría no estar invalidado en las preferencias del usuario.");
+        print("[PurchasePage] ADVERTENCIA: No se pudo marcar el cupón como usado.");
       }
     }
 
-    await _notificationController.sendSaleNotification(
-      sellerId: widget.listing.sellerId,
-      buyerId: buyerId,
-      buyerName: buyerName,
-      listingId: widget.listing.id,
-      listingTitle: widget.listing.title,
-    );
-
-    bool statusUpdated = await _gameListingController.updateListingStatus(
-        widget.listing.id, 'sold', widget.listing.sellerId);
-
-    if (!statusUpdated) {
-        print("ADVERTENCIA (PurchasePage): No se pudo actualizar el estado del listado a 'vendido'. Verificar permisos o lógica.");
-    }
-
     try {
-      await _purchaseHistoryRepository.createPurchaseRecord(
+        await _purchaseHistoryRepository.createPurchaseRecord(
         buyerId: buyerId,
         buyerName: buyerName,
         sellerId: widget.listing.sellerId,
@@ -164,13 +145,39 @@ class _PurchasePageState extends State<PurchasePage> {
       print("[PurchasePage] Registro de compra creado exitosamente.");
     } catch (e) {
       print("[PurchasePage] Error al crear el registro de compra: $e");
+      Get.snackbar("Error", "No se pudo registrar la compra: ${e.toString()}",
+        snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white);
+      setState(() { _isProcessingPayment = false; });
+      return;
     }
 
+    bool statusUpdated = await _gameListingController.updateListingStatus(
+        widget.listing.id, 'sold', buyerId); 
+
+    if (!statusUpdated) {
+        print("ADVERTENCIA (PurchasePage): No se pudo actualizar el estado del listado a 'vendido'.");
+    }
+    
+    await _notificationController.sendSaleNotificationToSeller(
+      sellerId: widget.listing.sellerId,
+      buyerId: buyerId,
+      buyerName: buyerName,
+      listingId: widget.listing.id,
+      listingTitle: widget.listing.title,
+    );
+
+    await _notificationController.sendPurchaseConfirmationToBuyer(
+      buyerId: buyerId,
+      listingId: widget.listing.id,
+      listingTitle: widget.listing.title,
+      sellerId: widget.listing.sellerId,
+    );
+
     Get.snackbar(
-      '¡Compra Simulada Exitosa!',
-      '¡Gracias por tu "compra" de ${widget.listing.title}! Precio pagado: ${NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0).format(_finalPrice)}',
+      '¡Compra Exitosa!',
+      '¡Gracias por tu compra de ${widget.listing.title}! Pagaste: ${NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0).format(_finalPrice)}',
       snackPosition: SnackPosition.TOP, backgroundColor: Colors.green, colorText: Colors.white,
-      duration: const Duration(seconds: 6), margin: const EdgeInsets.all(15), borderRadius: 10,
+      duration: const Duration(seconds: 7), margin: const EdgeInsets.all(15), borderRadius: 10,
     );
     
     setState(() { _isProcessingPayment = false; });
@@ -192,7 +199,7 @@ class _PurchasePageState extends State<PurchasePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AspectRatio(
-              aspectRatio: 16 / 9,
+              aspectRatio: 16 / 9, // CORREGIDO: Parámetro aspectRatio añadido
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12.0),
                 child: (imageUrl != null && imageUrl.isNotEmpty)
@@ -218,7 +225,6 @@ class _PurchasePageState extends State<PurchasePage> {
             const SizedBox(height: 20),
             Text(widget.listing.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            
             Text(
               "Precio Original: ${NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0).format(widget.listing.price)}",
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -229,7 +235,7 @@ class _PurchasePageState extends State<PurchasePage> {
             if (_discountAmount > 0) ...[
               Text(
                 "Descuento: -${NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0).format(_discountAmount)}",
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.green[400]),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.green[600]),
               ),
             ],
             Text(
@@ -264,7 +270,7 @@ class _PurchasePageState extends State<PurchasePage> {
                     child: Text('No usar cupón'),
                   ),
                   ...availableCoupons.map<DropdownMenuItem<String>>((Map<String, dynamic> coupon) {
-                    final String couponId = coupon['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(); // Fallback ID
+                    final String couponId = coupon['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(); 
                     final String discountPercentage = (((coupon['discount'] as num?)?.toDouble() ?? 0.0) * 100).toStringAsFixed(0);
                     return DropdownMenuItem<String>(
                       value: couponId,
@@ -357,13 +363,13 @@ class _PurchasePageState extends State<PurchasePage> {
                   ElevatedButton.icon(
                     icon: _isProcessingPayment 
                         ? Container(width:24, height: 24, padding: const EdgeInsets.all(2.0), child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 3,)) 
-                        : const Icon(Icons.security),
+                        : const Icon(Icons.payment_rounded),
                     label: Text(_isProcessingPayment 
                         ? 'Procesando...' 
-                        : 'Pagar ${NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0).format(_finalPrice)} (Simulado)'),
+                        : 'Pagar ${NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0).format(_finalPrice)}'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                      textStyle: Theme.of(context).textTheme.titleMedium,
+                      textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     onPressed: _isProcessingPayment ? null : _simulatePayment,
                   ),
@@ -373,7 +379,7 @@ class _PurchasePageState extends State<PurchasePage> {
             const SizedBox(height: 20),
               Center(
                 child: Text(
-                  "Nota: Esta es una simulación. No se realizará ningún cargo real y tus datos no se guardan.",
+                  "Nota: Esta es una simulación. No se realizará ningún cargo real.",
                   style: Theme.of(context).textTheme.bodySmall,
                   textAlign: TextAlign.center,
                 ),
@@ -385,7 +391,7 @@ class _PurchasePageState extends State<PurchasePage> {
   }
 }
 
-// InputFormatters
+// InputFormatters (deben estar fuera de la clase _PurchasePageState o en su propio archivo)
 class _CardNumberInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
@@ -409,18 +415,19 @@ class _CardNumberInputFormatter extends TextInputFormatter {
 }
 
 class _ExpiryDateInputFormatter extends TextInputFormatter {
- @override
+  @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     var newText = newValue.text.replaceAll('/', ''); 
+    // var oldText = oldValue.text.replaceAll('/', ''); // No es necesario para esta lógica simple
 
-    if (newValue.text.length < oldValue.text.length && !oldValue.text.endsWith('/')) {
+    if (newValue.selection.baseOffset == 0 && newValue.text.isEmpty) { // Permite borrar completamente
         return newValue;
     }
-
+    
     var buffer = StringBuffer();
     for (int i = 0; i < newText.length; i++) {
       buffer.write(newText[i]);
-      if (i == 1 && newText.length > 1 && buffer.length == 2) { 
+      if (i == 1 && newText.length > 1) { // Añadir '/' después del segundo dígito si hay más dígitos
         buffer.write('/');
       }
     }

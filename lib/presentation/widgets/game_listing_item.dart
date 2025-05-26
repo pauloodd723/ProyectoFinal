@@ -4,12 +4,13 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:proyecto_final/controllers/auth_controller.dart';
 import 'package:proyecto_final/controllers/game_listing_controller.dart';
+import 'package:proyecto_final/controllers/chat_controller.dart';
 import 'package:proyecto_final/model/game_listing_model.dart';
 import 'package:proyecto_final/presentation/pages/edit_listing_page.dart';
 import 'package:proyecto_final/presentation/pages/purchase_page.dart';
-// Asegúrate que esta importación sea correcta para tu estructura de archivos
 import 'package:proyecto_final/presentation/pages/seller_profile_page.dart';
-
+import 'package:proyecto_final/presentation/pages/chat_message_page.dart';
+import 'package:proyecto_final/data/repositories/auth_repository.dart';
 
 class GameListingItem extends StatelessWidget {
   final GameListingModel listing;
@@ -20,16 +21,18 @@ class GameListingItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final AuthController authController = Get.find();
     final GameListingController gameListingController = Get.find();
+    final ChatController chatController = Get.find();
     final bool isOwner = authController.currentUserId == listing.sellerId;
 
     final String? imageUrl = listing.getDisplayImageUrl();
 
-    // DEBUG PRINT PARA PROBLEMA 1 (BOTÓN COMPRAR) - (Puedes quitarlo si ya solucionaste eso)
-    // print('DEBUG GameListingItem: ID=${listing.id}, Title=${listing.title}, Status=${listing.status}');
+    // --- PRINT DE DIAGNÓSTICO ---
+    print("[GameListingItem] Juego: ${listing.title}, Status: '${listing.status}', Es Dueño: $isOwner, Precio: ${listing.price}");
+    // --- FIN PRINT DE DIAGNÓSTICO ---
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      elevation: 4,
+      elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -39,7 +42,7 @@ class GameListingItem extends StatelessWidget {
             AspectRatio(
               aspectRatio: 16 / 9,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(8.0),
                 child: (imageUrl != null && imageUrl.isNotEmpty)
                     ? Image.network(
                         imageUrl,
@@ -56,16 +59,15 @@ class GameListingItem extends StatelessWidget {
                           );
                         },
                         errorBuilder: (context, error, stackTrace) {
-                          print("Error cargando imagen de red ($imageUrl): $error");
                           return Container(
-                            color: Colors.grey[800],
-                            child: Icon(Icons.broken_image, color: Colors.grey[600], size: 40),
+                            color: Colors.grey[200],
+                            child: Icon(Icons.broken_image_outlined, color: Colors.grey[400], size: 40),
                             alignment: Alignment.center,
                           );
                         })
                     : Container(
-                        color: Colors.grey[800],
-                        child: Icon(Icons.image_not_supported, color: Colors.grey[600], size: 40),
+                        color: Colors.grey[200],
+                        child: Icon(Icons.image_not_supported_outlined, color: Colors.grey[400], size: 40),
                         alignment: Alignment.center,
                       ),
               ),
@@ -86,35 +88,25 @@ class GameListingItem extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 4),
-            
             InkWell(
               onTap: () {
-                // --- ESTA ES LA LÍNEA DE PRINT AÑADIDA PARA EL PASO 1 DEL DIAGNÓSTICO DEL PROBLEMA 2 ---
-                print("[GameListingItem onTap Seller] Intentando ver perfil del vendedor con ID: '${listing.sellerId}', Nombre: '${listing.sellerName}'");
-                // --- FIN DE LA LÍNEA DE PRINT ---
-
                 if (listing.sellerId.isNotEmpty) {
                   Get.to(() => SellerProfilePage(
                         sellerId: listing.sellerId,
                         sellerName: listing.sellerName,
                       ));
-                } else {
-                  Get.snackbar("Información", "ID del vendedor no disponible.");
                 }
               },
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                padding: const EdgeInsets.symmetric(vertical: 2.0),
                 child: Text(
                   'Vendido por: ${listing.sellerName}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.secondary, 
-                        decoration: TextDecoration.underline, 
-                        decorationColor: Theme.of(context).colorScheme.secondary,
+                        color: Theme.of(context).colorScheme.secondary,
                       ),
                 ),
               ),
             ),
-
             if (listing.gameCondition != null && listing.gameCondition!.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(
@@ -122,27 +114,13 @@ class GameListingItem extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
               ),
             ],
-            const SizedBox(height: 10),
-
-            if (!isOwner && listing.status == 'sold')
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Text(
-                  'VENDIDO',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-
-            if (isOwner)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (isOwner) ...[
                   TextButton.icon(
-                    icon: Icon(Icons.edit, size: 18, color: Theme.of(context).colorScheme.secondary),
+                    icon: Icon(Icons.edit_outlined, size: 18, color: Theme.of(context).colorScheme.secondary),
                     label: Text('Editar', style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
                     onPressed: () {
                       Get.to(() => EditListingPage(listing: listing));
@@ -150,10 +128,10 @@ class GameListingItem extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   TextButton.icon(
-                    icon: Icon(Icons.delete, size: 18, color: Theme.of(context).colorScheme.error),
+                    icon: Icon(Icons.delete_outline, size: 18, color: Theme.of(context).colorScheme.error),
                     label: Text('Eliminar', style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                    onPressed: () async {
-                      Get.defaultDialog(
+                    onPressed: () {
+                        Get.defaultDialog(
                           title: "Confirmar Eliminación",
                           middleText: "¿Estás seguro de que quieres eliminar este artículo: ${listing.title}?",
                           textConfirm: "Eliminar",
@@ -167,35 +145,88 @@ class GameListingItem extends StatelessWidget {
                               Get.snackbar("Error", "No se pudo eliminar el artículo: ${gameListingController.error.value}",
                                   snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white);
                             } else {
-                              Get.snackbar("Éxito", "Artículo eliminado.",
+                              Get.snackbar("Éxito", "Artículo eliminado permanentemente.",
                                   snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.green, colorText: Colors.white);
                             }
-                          });
+                          }
+                        );
                     },
                   ),
-                ],
-              )
-            else if (listing.status == 'available') 
-              Align(
-                alignment: Alignment.centerRight,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.shopping_cart_checkout),
-                  label: const Text('Comprar'),
-                  onPressed: () {
-                    if (!authController.isUserLoggedIn) {
-                      Get.snackbar(
-                          "Acción Requerida", "Debes iniciar sesión para comprar artículos.",
-                          snackPosition: SnackPosition.BOTTOM);
-                      return;
-                    }
-                    Get.to(() => PurchasePage(listing: listing));
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  )
-                ),
-              ),
+                ] else ...[ // Si NO es el dueño
+                  TextButton.icon(
+                    icon: Icon(Icons.message_outlined, size: 18, color: Theme.of(context).colorScheme.secondary), // CAMBIADO
+                    label: Text('Contactar', style: TextStyle(color: Theme.of(context).colorScheme.secondary)), // CAMBIADO
+                    onPressed: () async {
+                      if (!authController.isUserLoggedIn) {
+                        Get.snackbar("Acción Requerida", "Debes iniciar sesión para contactar al vendedor.", snackPosition: SnackPosition.BOTTOM);
+                        return;
+                      }
+                      if (authController.currentUserId == listing.sellerId) {
+                        Get.snackbar("Info", "No puedes enviarte mensajes a ti mismo por un anuncio.");
+                        return;
+                      }
+                      Get.dialog(
+                        const Center(child: CircularProgressIndicator()),
+                        barrierDismissible: false,
+                      );
+                      final chat = await chatController.openOrCreateChat(
+                        otherUserId: listing.sellerId,
+                        listingId: listing.id,
+                      );
+                      if (Get.isDialogOpen ?? false) Get.back();
+
+                      if (chat != null) {
+                        String otherUserNameForChat = listing.sellerName;
+                        String? otherUserPhotoUrlForChat;
+                        int otherParticipantIndex = chat.participants.indexWhere((id) => id == listing.sellerId);
+
+                        if (otherParticipantIndex != -1) {
+                            if (chat.participantNames != null && chat.participantNames!.length > otherParticipantIndex) {
+                                otherUserNameForChat = chat.participantNames![otherParticipantIndex];
+                            }
+                            if (chat.participantPhotoIds != null && chat.participantPhotoIds!.length > otherParticipantIndex && chat.participantPhotoIds![otherParticipantIndex].isNotEmpty) {
+                                final authRepo = Get.find<AuthRepository>();
+                                otherUserPhotoUrlForChat = authRepo.getProfilePictureUrl(chat.participantPhotoIds![otherParticipantIndex]);
+                            }
+                        }
+                        
+                        Get.to(() => ChatMessagePage(
+                              chatId: chat.id,
+                              otherUserId: listing.sellerId,
+                              otherUserName: otherUserNameForChat,
+                              otherUserPhotoUrl: otherUserPhotoUrlForChat,
+                            ));
+                      } else {
+                        Get.snackbar("Error", "No se pudo iniciar la conversación. Inténtalo de nuevo.");
+                      }
+                    },
+                  ),
+                  const Spacer(),
+                  // Lógica para el botón de Comprar o texto de Vendido
+                  if (listing.status == 'available')
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.shopping_cart_checkout_rounded, size: 18),
+                      label: const Text('Comprar'),
+                      onPressed: () { // Esta es la acción del botón comprar
+                          if (!authController.isUserLoggedIn) {
+                            Get.snackbar("Acción Requerida", "Debes iniciar sesión para comprar artículos.", snackPosition: SnackPosition.BOTTOM);
+                            return; // Importante: salir de la función aquí
+                          }
+                          Get.to(() => PurchasePage(listing: listing));
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        textStyle: const TextStyle(fontSize: 14),
+                      )
+                    )
+                  else if (listing.status == 'sold')
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Text('VENDIDO', style: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold)),
+                      ),
+                ]
+              ],
+            ),
           ],
         ),
       ),

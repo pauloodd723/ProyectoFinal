@@ -1,38 +1,68 @@
 // lib/model/user_model.dart
 class UserModel {
-  final String id; // Corresponde a Appwrite Account $id y document $id en usersCollection
-  final String username; // Nombre público para mostrar
-  final String email; // Considerar si este campo es necesario para un perfil público
-  final String? profileImageId; // ID del archivo de la imagen de perfil en Appwrite Storage
+  final String $id;
+  final String username;
+  final String email;
+  final String? profileImageId;
+  final String? defaultAddress;
+  final double? latitude;    // Asegúrate que esto esté aquí
+  final double? longitude;   // Asegúrate que esto esté aquí
 
   UserModel({
-    required this.id,
+    required this.$id,
     required this.username,
     required this.email,
     this.profileImageId,
+    this.defaultAddress,
+    this.latitude,         // Y aquí
+    this.longitude,        // Y aquí
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      // Si el $id del documento es el ID del usuario, usa json['$id'].
-      // Si tienes un campo específico como 'userId', usa json['userId'].
-      // Aquí asumimos que el document ID es el user ID.
-      id: json['\$id'] ?? json['userId'] ?? '', // Asegúrate de que coincida con tu estructura
-      username: json['name'] ?? json['username'] ?? 'Usuario Desconocido', // Prioriza 'name', luego 'username'
-      email: json['email'] ?? '', // Puede ser útil, pero considera la privacidad
-      profileImageId: json['profileImageId'],
+      $id: json['\$id'] as String, // Asume que $id está en el mapa
+      username: json['name'] as String, // o json['username'] según tu BD
+      email: json['email'] as String,
+      profileImageId: json['profileImageId'] as String?,
+      defaultAddress: json['defaultAddress'] as String?,
+      // Correcta extracción de lat/lon, manejando nulls y conversión de num
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
     );
   }
 
   Map<String, dynamic> toJson() {
-    // Este toJson se usaría si crearas/actualizaras documentos en usersCollectionId desde el cliente
-    // usando este modelo directamente.
     return {
-      // No incluimos 'id' aquí porque usualmente es el ID del documento.
-      // 'userId': id, // Si tuvieras un campo 'userId' explícito.
-      'name': username, // o 'username' según el atributo en Appwrite
+      'name': username, // o 'username'
       'email': email,
       if (profileImageId != null) 'profileImageId': profileImageId,
+      'defaultAddress': defaultAddress,
+      'latitude': latitude,
+      'longitude': longitude,
     };
+  }
+
+  UserModel copyWith({
+    String? $id,
+    String? username,
+    String? email,
+    String? profileImageId,
+    bool allowNullProfileImageId = false,
+    String? defaultAddress,
+    bool allowNullDefaultAddress = false,
+    double? latitude,
+    bool allowNullLatitude = false, // Para permitir establecer explícitamente a null
+    double? longitude,
+    bool allowNullLongitude = false, // Para permitir establecer explícitamente a null
+  }) {
+    return UserModel(
+      $id: $id ?? this.$id,
+      username: username ?? this.username,
+      email: email ?? this.email,
+      profileImageId: allowNullProfileImageId ? profileImageId : (profileImageId ?? this.profileImageId),
+      defaultAddress: allowNullDefaultAddress ? defaultAddress : (defaultAddress ?? this.defaultAddress),
+      latitude: allowNullLatitude ? latitude : (latitude ?? this.latitude),
+      longitude: allowNullLongitude ? longitude : (longitude ?? this.longitude),
+    );
   }
 }

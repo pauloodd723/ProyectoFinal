@@ -11,6 +11,7 @@ import 'package:proyecto_final/presentation/pages/login_page.dart';
 // NUEVOS IMPORTS
 import 'package:proyecto_final/controllers/notification_controller.dart';
 import 'package:proyecto_final/presentation/pages/notifications_page.dart';
+import 'package:proyecto_final/presentation/pages/chat_list_page.dart'; // IMPORTADO PARA EL BOTÓN DE MENSAJES
 
 
 class HomePage extends material.StatelessWidget {
@@ -51,12 +52,24 @@ class HomePage extends material.StatelessWidget {
               ),
             ],
           ),
-          // Botón de Notificaciones con Badge
+          // NUEVO BOTÓN DE MENSAJES
+          material.IconButton(
+            icon: const material.Icon(material.Icons.chat_bubble_outline_rounded), // Icono para mensajes
+            tooltip: 'Mis Mensajes',
+            onPressed: () {
+              if (authController.isUserLoggedIn) {
+                Get.to(() => const ChatListPage());
+              } else {
+                Get.snackbar("Acción Requerida", "Debes iniciar sesión para ver tus mensajes.",
+                    snackPosition: SnackPosition.BOTTOM);
+                Get.to(() => LoginPage());
+              }
+            },
+          ),
           Obx(() {
             final unreadCount = notificationController.unreadCount.value;
             return material.IconButton(
               icon: material.Badge(
-                // CORRECCIÓN AQUÍ: Añadir 'material.' al Text
                 label: material.Text(unreadCount > 9 ? '9+' : unreadCount.toString()),
                 isLabelVisible: unreadCount > 0,
                 child: const material.Icon(material.Icons.notifications_outlined),
@@ -174,7 +187,7 @@ class HomePage extends material.StatelessWidget {
           } else {
             Get.snackbar("Acción Requerida", "Debes iniciar sesión para añadir artículos.",
                 snackPosition: SnackPosition.BOTTOM);
-                Get.to(() => LoginPage());
+              Get.to(() => LoginPage());
           }
         },
         icon: const material.Icon(material.Icons.add),
