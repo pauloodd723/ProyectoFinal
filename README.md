@@ -1,6 +1,6 @@
 # Proyecto final - GameShopX
 
-GameShopX es una aplicacion para la venta y intercambios de videojuegos en tiempo real, tanto como compras, descuentos, mensajes y ventas son algunas de sus funciones
+GameShopX es una aplicacion para la venta y intercambios de videojuegos en tiempo real, tanto como compras, descuentos, mensajes y ubicacion son algunas de sus funciones
 
 ## Librerias / Dependencias
 
