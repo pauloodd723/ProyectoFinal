@@ -28,12 +28,21 @@ dependency_overrides:
 ### Credenciales en appwrite
 
 endpoint = 'https://cloud.appwrite.io/v1';
+
 projectId = '67e47f860038ef82c414';
+
 databaseId = '67e48069000c6349986e'; 
+
 usersCollectionId = '67e48093002c64d336c1'; 
+
 gameListingsCollectionId = 'games_collection_id'; 
+
 notificationsCollectionId = '682d16800000235fb2ea'; 
+
 purchaseHistoryCollectionId = '682d18af0018df461550'; 
+
 chatsCollectionId = '68333b840006884d8183';       
+
 messagesCollectionId = '683341df0025f6de7c32';  
+
 gameImagesBucketId = '682a50cd0005f389086b';
