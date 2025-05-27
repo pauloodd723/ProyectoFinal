@@ -5,24 +5,35 @@ GameShopX es una aplicacion para la venta y intercambios de videojuegos en tiemp
 ## Librerias / Dependencias
 
 dependencies:
+
   flutter:
     sdk: flutter
     
   flutter_map: ^6.1.0
+  
   http: ^1.2.0
+  
   latlong2: ^0.9.1
+  
   cupertino_icons: ^1.0.8
+  
   get: ^4.7.2
+  
   appwrite: ^15.0.2
+  
   intl: ^0.19.0
+  
   image_picker: ^1.1.2
+  
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+    
   flutter_lints: ^5.0.0
 
 dependency_overrides:
+
   flutter_web_auth_2: ^4.0.0
 
 ### Credenciales en appwrite
