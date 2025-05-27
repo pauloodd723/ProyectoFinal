@@ -1,4 +1,3 @@
-// lib/presentation/pages/edit_profile_page.dart
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -88,12 +87,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     bool nameUpdateAttempted = _nameController.text != (authController.currentUserName ?? '');
     bool pictureUpdateAttempted = _pickedImageXFile != null;
     
-    bool nameUpdateSuccess = !nameUpdateAttempted; // Si no se intentó, se considera éxito para la lógica general
-    bool pictureUpdateSuccess = !pictureUpdateAttempted; // Si no se intentó, se considera éxito
+    bool nameUpdateSuccess = !nameUpdateAttempted; 
+    bool pictureUpdateSuccess = !pictureUpdateAttempted; 
 
     String? finalErrorMessage;
 
-    // Actualizar nombre si cambió
     if (nameUpdateAttempted) {
       nameUpdateSuccess = await authController.updateProfileName(_nameController.text, showLoadingIndicator: false);
       if (!nameUpdateSuccess) {
@@ -101,13 +99,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }
     }
 
-    // Actualizar foto de perfil si se seleccionó una nueva y el nombre se actualizó bien (o no se intentó)
-    if (pictureUpdateAttempted && nameUpdateSuccess) { // Solo intentar si el paso anterior fue bien
+    if (pictureUpdateAttempted && nameUpdateSuccess) { 
       File? fileToUpload;
       if (kIsWeb) {
         print("ADVERTENCIA (EditProfilePage): La subida de fotos de perfil desde web con XFile.path como File es problemática.");
-        // Para producción web, se necesitaría pasar bytes.
-        // Por ahora, no se intentará crear el File si es web para evitar errores.
+
       } else { 
         try {
           fileToUpload = File(_pickedImageXFile!.path);
@@ -124,7 +120,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           finalErrorMessage = (finalErrorMessage ?? "") + "\n" + (authController.error.value.isNotEmpty ? authController.error.value : "No se pudo actualizar la foto.");
         }
       } else if (kIsWeb && _pickedImageXFile != null) {
-          // Si es web y se seleccionó imagen, pero no se pudo subir por la limitación de File
+
           finalErrorMessage = (finalErrorMessage ?? "") + "\nSubida de foto desde web no implementada completamente.";
           pictureUpdateSuccess = false;
       }
@@ -138,7 +134,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       } else {
          Get.snackbar("Información", "No se realizaron cambios.", snackPosition: SnackPosition.BOTTOM);
       }
-      if (mounted) Get.back(); // Volver a ProfilePage
+      if (mounted) Get.back(); 
     } else {
       if (finalErrorMessage != null && finalErrorMessage.trim().isNotEmpty) {
         Get.snackbar("Error", finalErrorMessage.trim(), snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white, duration: const Duration(seconds: 4));

@@ -1,7 +1,6 @@
-// lib/presentation/pages/add_listing_page.dart
 import 'dart:io';
-import 'dart:typed_data'; // Para Uint8List
-import 'package:flutter/foundation.dart' show kIsWeb; // Para verificar si es web
+import 'dart:typed_data'; 
+import 'package:flutter/foundation.dart' show kIsWeb; 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -26,8 +25,8 @@ class _AddListingPageState extends State<AddListingPage> {
   final _descriptionController = TextEditingController();
   final _conditionController = TextEditingController();
 
-  XFile? _pickedImageXFile; // Almacena el XFile de image_picker
-  Uint8List? _imageBytes; // Almacena los bytes de la imagen para preview con Image.memory
+  XFile? _pickedImageXFile; 
+  Uint8List? _imageBytes; 
 
   @override
   void dispose() {
@@ -39,17 +38,16 @@ class _AddListingPageState extends State<AddListingPage> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    // Usar ImagePicker directamente para obtener XFile
     final XFile? pickedXFile = await ImagePicker().pickImage(
         source: source,
-        imageQuality: 70, // Comprimir un poco la imagen
-        maxWidth: 1024, // Redimensionar si es muy grande
+        imageQuality: 70, 
+        maxWidth: 1024, 
       );
 
     if (pickedXFile != null) {
       _pickedImageXFile = pickedXFile;
-      _imageBytes = await _pickedImageXFile!.readAsBytes(); // Leer bytes para Image.memory
-      setState(() {}); // Actualizar UI para mostrar la imagen
+      _imageBytes = await _pickedImageXFile!.readAsBytes(); 
+      setState(() {}); 
     }
   }
 
@@ -87,7 +85,7 @@ class _AddListingPageState extends State<AddListingPage> {
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) {
-      return; // No continuar si el formulario no es válido
+      return; 
     }
 
     final String? userId = authController.currentUserId;
@@ -115,11 +113,8 @@ class _AddListingPageState extends State<AddListingPage> {
         return;
     }
 
-    // El campo 'imageUrl' en GameListingModel se deja null aquí.
-    // El GameListingController y GameListingRepository asignarán el ID del archivo
-    // subido al campo 'imageUrl' antes de guardarlo en la base de datos.
     final newListingData = GameListingModel(
-      id: '', // Appwrite generará el ID
+      id: '', 
       title: _titleController.text,
       price: double.tryParse(_priceController.text) ?? 0.0,
       description: _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
@@ -127,19 +122,11 @@ class _AddListingPageState extends State<AddListingPage> {
       sellerId: userId,
       sellerName: userName,
       status: 'disponible',
-      // imageUrl (el ID del archivo) será establecido por el controlador/repositorio
     );
 
     File? fileToUpload;
-    // Para la subida, necesitamos un objeto File si no es web.
-    // Si es web, el controlador/repositorio necesitaría manejar XFile/bytes.
     if (_pickedImageXFile != null) {
         if (kIsWeb) {
-          // ADVERTENCIA: La subida directa de XFile.path como File no es fiable en web.
-          // Se necesitaría que GameListingController y GameListingRepository
-          // manejen XFile.readAsBytes() y usen InputFile.fromBytes().
-          // Por ahora, se mostrará una advertencia y se intentará la subida
-          // que podría fallar o no ser óptima en web.
           print("ADVERTENCIA (AddListingPage): La subida de archivos desde web con XFile.path como File es problemática. Considerar refactorizar a InputFile.fromBytes().");
           Get.snackbar(
             "Subida Web (Aviso)", 
@@ -147,27 +134,17 @@ class _AddListingPageState extends State<AddListingPage> {
             snackPosition: SnackPosition.BOTTOM, 
             duration: const Duration(seconds: 7)
           );
-          // Para un manejo más robusto, podrías pasar _imageBytes y _pickedImageXFile.name al controller.
-          // Por ahora, intentamos crear el File, sabiendo que puede no ser ideal para web.
         }
         try {
-          // Esto funciona bien en móvil. En web, XFile.path puede ser una URL de blob.
           fileToUpload = File(_pickedImageXFile!.path);
         } catch (e) {
           print("Error creando File desde XFile.path en AddListingPage (puede ser normal en web): $e");
            Get.snackbar("Error de Archivo", "No se pudo preparar la imagen para subir.", snackPosition: SnackPosition.BOTTOM);
-          return; // No continuar si no se puede preparar el archivo
+          return; 
         }
     }
 
-    // Si fileToUpload es null (porque es web y no se pudo crear el File de forma fiable,
-    // o porque _pickedImageXFile fue null, aunque ya lo validamos),
-    // la lógica en el controller/repo debería manejarlo (ej. no intentar subir).
-    // Sin embargo, ya validamos que _pickedImageXFile no sea null.
-    // El principal problema aquí es la creación de `File` en web.
-
     await gameListingController.addListing(newListingData, fileToUpload, userId);
-
     if (gameListingController.error.value.isEmpty) {
       Get.back(); 
       Get.snackbar(
@@ -194,7 +171,7 @@ class _AddListingPageState extends State<AddListingPage> {
       appBar: AppBar(
         title: const Text('Añadir Nuevo Artículo'),
       ),
-      body: Obx(() { // Para reaccionar a gameListingController.isLoading
+      body: Obx(() { 
         return Stack(
           children: [
             Padding(
@@ -209,16 +186,16 @@ class _AddListingPageState extends State<AddListingPage> {
                         height: 200,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: Colors.grey[300], // Color de fondo del contenedor de imagen
+                          color: Colors.grey[300], 
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.grey[400]!),
                         ),
                         child: _imageBytes != null
-                            ? ClipRRect( // Muestra la imagen seleccionada usando Image.memory
-                                borderRadius: BorderRadius.circular(11), // Un poco menos que el contenedor para ver el borde
+                            ? ClipRRect( 
+                                borderRadius: BorderRadius.circular(11), 
                                 child: Image.memory(_imageBytes!, fit: BoxFit.cover)
                               )
-                            : Column( // Placeholder si no hay imagen seleccionada
+                            : Column( 
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(Icons.add_a_photo, size: 50, color: Colors.grey[700]),

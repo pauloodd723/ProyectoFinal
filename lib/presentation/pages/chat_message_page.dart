@@ -1,16 +1,19 @@
-// lib/presentation/pages/chat_message_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:proyecto_final/controllers/chat_controller.dart';
 import 'package:proyecto_final/controllers/auth_controller.dart';
+import 'package:proyecto_final/data/repositories/user_repository.dart';
 import 'package:proyecto_final/model/message_model.dart';
+import 'package:proyecto_final/model/user_model.dart';
+import 'package:proyecto_final/presentation/pages/midpoint_map_page.dart';
 
 class ChatMessagePage extends StatefulWidget {
-  final String chatId; // ID del chat que esta página va a mostrar
+  final String chatId;
   final String otherUserId;
   final String otherUserName;
   final String? otherUserPhotoUrl;
+  final String? listingId; 
 
   const ChatMessagePage({
     super.key,
@@ -18,6 +21,7 @@ class ChatMessagePage extends StatefulWidget {
     required this.otherUserId,
     required this.otherUserName,
     this.otherUserPhotoUrl,
+    this.listingId,
   });
 
   @override
@@ -27,63 +31,53 @@ class ChatMessagePage extends StatefulWidget {
 class _ChatMessagePageState extends State<ChatMessagePage> {
   final ChatController _chatController = Get.find();
   final AuthController _authController = Get.find();
+  final UserRepository _userRepository = Get.find<UserRepository>();
   final TextEditingController _messageInputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    print("[ChatMessagePage] initState for chat ID: ${widget.chatId} with ${widget.otherUserName}");
+    print(
+        "[ChatMessagePage] initState for chat ID: ${widget.chatId} with ${widget.otherUserName} (ID: ${widget.otherUserId})");
 
-    // Es crucial que el ChatController esté configurado para ESTE chat.
-    // La navegación desde ChatListPage ya debería haber llamado a openOrCreateChat.
-    // Aquí nos aseguramos de que, si por alguna razón no es el chat actual, se intente configurar.
-    // También cargamos mensajes y marcamos como leídos.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final String currentUserId = _authController.currentUserId ?? '';
       if (currentUserId.isEmpty) {
-        print("[ChatMessagePage] Error: currentUserId is empty in initState. Cannot proceed.");
         if (mounted) {
           Get.snackbar("Error", "No se pudo identificar al usuario actual.");
-          Get.back(); // Volver si no hay usuario
+          Get.back();
         }
         return;
       }
-
-      // Si el chat actual en el controlador no es este, intenta abrirlo/establecerlo.
-      // Esto también cargará mensajes y suscribirá.
+      
       if (_chatController.currentChat.value?.id != widget.chatId) {
-        print("[ChatMessagePage] Chat ID ${widget.chatId} no es el actual en ChatController. Abriendo/Estableciendo contexto...");
-        _chatController.openOrCreateChat(
+        _chatController
+            .openOrCreateChat(
           otherUserId: widget.otherUserId,
-          // listingId: Si tienes un listingId asociado a este chat, pásalo aquí.
-          // Por ahora, si el chat ya existe por chatId, esta función debería encontrarlo
-          // y establecerlo como currentChat, o crear uno nuevo si es necesario.
-        ).then((chatModel) {
+          listingId: widget.listingId,
+        )
+            .then((chatModel) {
           if (chatModel != null && chatModel.id == widget.chatId) {
-            // markMessagesAsRead ya se llama dentro de openOrCreateChat en el controller
             _scrollToBottom(animated: false);
           } else if (chatModel == null) {
-            print("[ChatMessagePage] No se pudo abrir o crear el chat desde initState para ${widget.chatId}.");
-            if(mounted) Get.snackbar("Error", "No se pudo cargar la conversación.");
+            if (mounted) {
+              Get.snackbar("Error", "No se pudo cargar la conversación.");
+            }
           }
         });
       } else {
-        // El chat ya es el activo. Solo asegúrate de que los mensajes estén cargados y marcados como leídos.
-        print("[ChatMessagePage] Chat ${widget.chatId} ya es el actual. Cargando mensajes y marcando como leído.");
-        _chatController.loadMessagesForCurrentChat(); // Carga si no se han cargado
-        _chatController.markMessagesAsRead(widget.chatId, currentUserId); // Usa el método del controller
+        _chatController.loadMessagesForCurrentChat();
+        _chatController.markMessagesAsRead(widget.chatId, currentUserId);
         _scrollToBottom(animated: false);
       }
 
-      // Escuchar cambios en la lista de mensajes para hacer scroll
-      // y para marcar como leídos si llegan nuevos mensajes mientras la pantalla está visible.
       _chatController.messages.listen((_) {
         _scrollToBottom();
-        // Si llegan nuevos mensajes y el usuario actual es el receptor, marcarlos como leídos.
         if (_chatController.messages.isNotEmpty) {
           final lastMessage = _chatController.messages.last;
-          if (lastMessage.receiverId == currentUserId && !(lastMessage.isRead ?? false)) {
+          if (lastMessage.receiverId == currentUserId &&
+              !(lastMessage.isRead ?? false)) {
             _chatController.markMessagesAsRead(widget.chatId, currentUserId);
           }
         }
@@ -95,11 +89,6 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
   void dispose() {
     _messageInputController.dispose();
     _scrollController.dispose();
-    // Considera si quieres limpiar el currentChat en el ChatController al salir de esta página.
-    // Si el usuario puede volver rápidamente a este chat, quizás no quieras limpiarlo.
-    // Si cada vez que entra a un chat se llama a openOrCreateChat, entonces está bien.
-    // _chatController.clearCurrentChatAndSubscription(); // Descomenta si quieres limpiar al salir.
-    print("[ChatMessagePage] dispose para chat ID: ${widget.chatId}");
     super.dispose();
   }
 
@@ -108,14 +97,14 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
     if (text.isNotEmpty) {
       _chatController.sendMessage(text);
       _messageInputController.clear();
-      // El scroll se manejará por el listener de _chatController.messages
     }
   }
 
   void _scrollToBottom({bool animated = true, int delayMs = 100}) {
-    // Esperar un breve momento para que el ListView se actualice con los nuevos mensajes
     Future.delayed(Duration(milliseconds: delayMs), () {
-      if (mounted && _scrollController.hasClients && _scrollController.position.hasContentDimensions) {
+      if (mounted &&
+          _scrollController.hasClients &&
+          _scrollController.position.hasContentDimensions) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: Duration(milliseconds: animated ? 300 : 1),
@@ -125,14 +114,86 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
     });
   }
 
+  void _handleShowMidpoint() async {
+    final UserModel? currentUser = _authController.localUser.value;
+    UserModel? otherUserFromRepo;
+
+    Get.dialog(
+      const Center(child: CircularProgressIndicator()),
+      barrierDismissible: false,
+    );
+
+    try {
+      otherUserFromRepo = await _userRepository.getUserById(widget.otherUserId);
+    } catch (e) {
+      print("[ChatMessagePage] Error obteniendo perfil de ${widget.otherUserId} para punto medio: $e");
+      if (Get.isDialogOpen ?? false) Get.back();
+      Get.snackbar("Error de Datos", "No se pudo obtener la información del otro usuario.", snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    if (Get.isDialogOpen ?? false) Get.back();
+
+    if (currentUser == null) {
+      Get.snackbar("Error de Datos", "No se pudo obtener tu información de usuario.", snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    if (otherUserFromRepo == null) {
+      Get.snackbar("Error de Datos", "No se pudo obtener la información del otro usuario.", snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    if (currentUser.latitude == null || currentUser.longitude == null) {
+      Get.snackbar(
+          "Tu Ubicación No Configurada",
+          "Tu ubicación predeterminada no tiene coordenadas. Por favor, edítala en tu perfil (guarda la dirección de nuevo para intentar la geocodificación).",
+          duration: const Duration(seconds: 6),
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    if (otherUserFromRepo.latitude == null || otherUserFromRepo.longitude == null) {
+      Get.snackbar(
+          "Ubicación del Otro Usuario No Configurada",
+          "${otherUserFromRepo.username} no ha configurado coordenadas para su ubicación.",
+          duration: const Duration(seconds: 6),
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    final double currentLat = currentUser.latitude!;
+    final double currentLon = currentUser.longitude!;
+    final String currentUserName = currentUser.username;
+
+    final double otherLat = otherUserFromRepo.latitude!;
+    final double otherLon = otherUserFromRepo.longitude!;
+    final String otherUserName = otherUserFromRepo.username;
+
+    double midLatitude = (currentLat + otherLat) / 2;
+    double midLongitude = (currentLon + otherLon) / 2;
+
+    print(
+        "Calculando punto medio: UserA ($currentUserName - $currentLat, $currentLon), UserB ($otherUserName - $otherLat, $otherLon), Midpoint ($midLatitude, $midLongitude)");
+
+    Get.to(() => MidpointMapPage(
+          userALatitude: currentLat,
+          userALongitude: currentLon,
+          userAName: "Tú ($currentUserName)",
+          userBLatitude: otherLat,
+          userBLongitude: otherLon,
+          userBName: otherUserName, 
+          midpointLatitude: midLatitude,
+          midpointLongitude: midLongitude,
+        ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final String currentUserId = _authController.currentUserId ?? '';
 
     return Scaffold(
       appBar: AppBar(
-        leadingWidth: 30, // Ajustar para que el título tenga más espacio
-        titleSpacing: 0,  // Reducir espaciado del título
+        leadingWidth: 30,
+        titleSpacing: 0,
         title: Row(
           children: [
             CircleAvatar(
@@ -143,16 +204,20 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                       !widget.otherUserPhotoUrl!.contains("placehold.co"))
                   ? NetworkImage(widget.otherUserPhotoUrl!)
                   : null,
-              onBackgroundImageError: (_, __) { /* Silenciar error si la imagen no carga */ },
               child: (widget.otherUserPhotoUrl == null ||
                       widget.otherUserPhotoUrl!.isEmpty ||
                       widget.otherUserPhotoUrl!.contains("placehold.co"))
-                  ? Text(widget.otherUserName.isNotEmpty ? widget.otherUserName[0].toUpperCase() : "?",
-                      style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant))
+                  ? Text(
+                      widget.otherUserName.isNotEmpty
+                          ? widget.otherUserName[0].toUpperCase()
+                          : "?",
+                      style: TextStyle(
+                          fontSize: 16,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant))
                   : null,
             ),
             const SizedBox(width: 10),
-            Expanded( // Para que el nombre no se desborde
+            Expanded(
               child: Text(
                 widget.otherUserName,
                 overflow: TextOverflow.ellipsis,
@@ -160,56 +225,49 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
             ),
           ],
         ),
-        // Aquí podrías añadir un botón para ver el perfil del otro usuario si lo deseas
-        // actions: [
-        //   IconButton(
-        //     icon: Icon(Icons.info_outline),
-        //     onPressed: () {
-        //       // Navegar a SellerProfilePage(sellerId: widget.otherUserId, sellerName: widget.otherUserName)
-        //     },
-        //   ),
-        // ],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.map_outlined),
+            tooltip: "Mostrar punto de encuentro medio",
+            onPressed: _handleShowMidpoint,
+          ),
+        ],
       ),
       body: Column(
         children: [
           Expanded(
             child: Obx(() {
-              // Verificar si el chat actual en el controlador es el de esta página
-              if (_chatController.currentChat.value?.id != widget.chatId && !_chatController.isLoadingMessages.value) {
-                // Si no es el chat correcto y no está cargando, podría ser un estado intermedio.
-                // Se podría mostrar un loader o un mensaje, o esperar a que initState lo resuelva.
-                // Por ahora, si los mensajes están vacíos, se mostrará el estado de carga o "sin mensajes".
-                print("[ChatMessagePage] Warning: currentChat.id (${_chatController.currentChat.value?.id}) != widget.chatId (${widget.chatId})");
-              }
-
-              if (_chatController.isLoadingMessages.value && _chatController.messages.isEmpty) {
+              if (_chatController.isLoadingMessages.value &&
+                  _chatController.messages.isEmpty) {
                 return const Center(child: CircularProgressIndicator());
               }
-              if (_chatController.messagesError.value.isNotEmpty && _chatController.messages.isEmpty) {
-                 return Center(
+              if (_chatController.messagesError.value.isNotEmpty &&
+                  _chatController.messages.isEmpty) {
+                return Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text("Error al cargar mensajes: ${_chatController.messagesError.value}", textAlign: TextAlign.center),
-                    )
-                  );
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                      "Error al cargar mensajes: ${_chatController.messagesError.value}",
+                      textAlign: TextAlign.center),
+                ));
               }
               if (_chatController.messages.isEmpty) {
-                return const Center(
+                return Center(
                   child: Padding(
-                    padding: EdgeInsets.all(20.0),
-                    child: Text("Envía un mensaje para comenzar la conversación.", textAlign: TextAlign.center),
-                  )
+                    padding: const EdgeInsets.all(20.0),
+                    child: Text(
+                        "Envía un mensaje para comenzar la conversación con ${widget.otherUserName}.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey[600])),
+                  ),
                 );
               }
 
               return ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(10.0),
-                // reverse: true, // Si quieres que los mensajes se muestren de abajo hacia arriba y el input arriba
                 itemCount: _chatController.messages.length,
                 itemBuilder: (context, index) {
-                  // Si reverse es true, accede a los mensajes en orden inverso:
-                  // final MessageModel message = _chatController.messages[(_chatController.messages.length - 1) - index];
                   final MessageModel message = _chatController.messages[index];
                   final bool isMe = message.senderId == currentUserId;
                   return _buildMessageBubble(context, message, isMe);
@@ -223,41 +281,53 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
     );
   }
 
-  Widget _buildMessageBubble(BuildContext context, MessageModel message, bool isMe) {
+  Widget _buildMessageBubble(
+      BuildContext context, MessageModel message, bool isMe) {
     final DateFormat timeFormatter = DateFormat('hh:mm a', 'es_CO');
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0), // Espacio entre burbujas
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
           Container(
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+            constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75),
             margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-            padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 14.0),
+            padding:
+                const EdgeInsets.symmetric(vertical: 10.0, horizontal: 14.0),
             decoration: BoxDecoration(
-              color: isMe ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceVariant,
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(18.0),
-                topRight: const Radius.circular(18.0),
-                bottomLeft: isMe ? const Radius.circular(18.0) : const Radius.circular(4.0),
-                bottomRight: isMe ? const Radius.circular(4.0) : const Radius.circular(18.0),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
-                )
-              ]
-            ),
+                color: isMe
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.surfaceVariant,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(18.0),
+                  topRight: const Radius.circular(18.0),
+                  bottomLeft: isMe
+                      ? const Radius.circular(18.0)
+                      : const Radius.circular(4.0),
+                  bottomRight: isMe
+                      ? const Radius.circular(4.0)
+                      : const Radius.circular(18.0),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
+                  )
+                ]),
             child: Column(
-              crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 Text(
                   message.text,
                   style: TextStyle(
                     fontSize: 15,
-                    color: isMe ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: isMe
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 5.0),
@@ -265,7 +335,10 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                   timeFormatter.format(message.timestamp.toLocal()),
                   style: TextStyle(
                     fontSize: 10.0,
-                    color: (isMe ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant).withOpacity(0.7),
+                    color: (isMe
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onSurfaceVariant)
+                        .withOpacity(0.7),
                   ),
                 ),
               ],
@@ -291,9 +364,8 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
       ),
       child: SafeArea(
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end, // Alinear items si el TextField crece
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // IconButton(icon: Icon(Icons.add_photo_alternate_outlined), onPressed: () { /* Para enviar imágenes */ }),
             Expanded(
               child: TextField(
                 controller: _messageInputController,
@@ -303,12 +375,16 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
                 decoration: InputDecoration(
                   hintText: 'Escribe un mensaje...',
                   filled: true,
-                  fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.1), // Un color de fondo sutil
+                  fillColor: Theme.of(context)
+                      .colorScheme
+                      .surface
+                      .withOpacity(0.1),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(25.0),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0), // Ajustar padding
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 12.0),
                 ),
                 onSubmitted: (text) => _sendMessage(),
                 minLines: 1,
@@ -319,14 +395,17 @@ class _ChatMessagePageState extends State<ChatMessagePage> {
             Obx(() => _chatController.isSendingMessage.value
                 ? const Padding(
                     padding: EdgeInsets.all(12.0),
-                    child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5)),
+                    child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2.5)),
                   )
                 : IconButton(
-                    icon: Icon(Icons.send_rounded, color: Theme.of(context).colorScheme.primary, size: 28),
+                    icon: Icon(Icons.send_rounded,
+                        color: Theme.of(context).colorScheme.primary, size: 28),
                     onPressed: _sendMessage,
                     tooltip: 'Enviar mensaje',
-                  )
-            ),
+                  )),
           ],
         ),
       ),

@@ -1,28 +1,24 @@
-// lib/controllers/auth_controller.dart
 import 'dart:io';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'; 
 import 'package:get/get.dart';
 import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/models.dart' as appwrite_auth_models; // Alias específico para Appwrite Auth User
+import 'package:appwrite/models.dart' as appwrite_auth_models; 
 import 'package:proyecto_final/data/repositories/auth_repository.dart';
 import 'package:proyecto_final/presentation/pages/home_page.dart';
 import 'package:proyecto_final/presentation/pages/login_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:proyecto_final/controllers/game_listing_controller.dart';
 import 'package:proyecto_final/data/repositories/user_repository.dart';
-import 'package:proyecto_final/model/user_model.dart'; // Importa tu UserModel
+import 'package:proyecto_final/model/user_model.dart'; 
 
 class AuthController extends GetxController {
   final AuthRepository _authRepository;
   final RxBool isLoading = false.obs;
   final RxString error = ''.obs;
-  final Rx<appwrite_auth_models.User?> appwriteUser = Rx(null); // Usuario de Appwrite Auth
-
-  final RxString profileImageUrl = ''.obs; // URL de la foto de perfil actual
-  final Rx<UserModel?> localUser = Rx<UserModel?>(null); // Modelo de tu colección 'users'
-
-  final String _profileImageIdKey = 'profileImageId'; // Key para prefs
-
+  final Rx<appwrite_auth_models.User?> appwriteUser = Rx(null); 
+  final RxString profileImageUrl = ''.obs; 
+  final Rx<UserModel?> localUser = Rx<UserModel?>(null);
+  final String _profileImageIdKey = 'profileImageId'; 
   late final GameListingController _gameListingController;
   late final UserRepository _userRepository;
 
@@ -37,80 +33,108 @@ class AuthController extends GetxController {
   }
 
   Future<void> _fetchLocalUserData(String userId) async {
-    print("[AuthController] Intentando cargar datos locales para el usuario: $userId");
+    print("[AuthController] _fetchLocalUserData para UserModel ID: $userId");
     try {
-      // No uses isLoading general aquí para no bloquear toda la UI al inicio si falla
       localUser.value = await _userRepository.getUserById(userId);
       if (localUser.value != null) {
-        print("[AuthController] Datos locales del usuario cargados: ${localUser.value!.username}, Dirección: ${localUser.value!.defaultAddress}");
+        print("[AuthController] UserModel local cargado: ${localUser.value!.username}");
+        print("  Dirección: ${localUser.value!.defaultAddress}");
+        print("  Latitud: ${localUser.value!.latitude}");
+        print("  Longitud: ${localUser.value!.longitude}");
+
+        if (localUser.value!.profileImageId != null && localUser.value!.profileImageId!.isNotEmpty) {
+           final String localUserPhotoUrl = _authRepository.getProfilePictureUrl(localUser.value!.profileImageId!);
+           if (profileImageUrl.value != localUserPhotoUrl) {
+             profileImageUrl.value = localUserPhotoUrl;
+             print("[AuthController] profileImageUrl actualizada desde localUser.value.profileImageId.");
+           }
+        } else if (profileImageUrl.value.isNotEmpty && (localUser.value!.profileImageId == null || localUser.value!.profileImageId!.isEmpty)) {
+
+        }
       } else {
-        print("[AuthController] No se encontró UserModel local para el usuario $userId. Esto es normal si es un nuevo registro y el perfil público aún no se ha creado completamente o si se borró.");
-        // Podrías intentar crear un perfil público básico aquí si no existe y el appwriteUser sí.
-        // Por ejemplo, si appwriteUser.value != null y localUser.value == null
-        // await _userRepository.createOrUpdatePublicUserProfile(
-        //   userId: appwriteUser.value!.$id,
-        //   name: appwriteUser.value!.name,
-        //   email: appwriteUser.value!.email,
-        //   // profileImageId y defaultAddress serían null inicialmente
-        // );
-        // localUser.value = await _userRepository.getUserById(userId); // Reintentar carga
+         print("[AuthController] No se encontró UserModel local para $userId.");
+         if(appwriteUser.value != null && appwriteUser.value!.$id == userId) {
+            print("[AuthController] Creando perfil UserModel local para $userId porque no existía.");
+            UserModel createdProfile = await _userRepository.createOrUpdatePublicUserProfile(
+                userId: appwriteUser.value!.$id,
+                name: appwriteUser.value!.name,
+                email: appwriteUser.value!.email,
+                profileImageId: appwriteUser.value!.prefs.data[_profileImageIdKey], 
+                defaultAddress: null, 
+                latitude: null,      
+                longitude: null,      
+            );
+            localUser.value = createdProfile; 
+            print("[AuthController] UserModel local creado para $userId.");
+             if (localUser.value!.profileImageId != null && localUser.value!.profileImageId!.isNotEmpty) {
+                profileImageUrl.value = _authRepository.getProfilePictureUrl(localUser.value!.profileImageId!);
+             }
+         }
       }
     } catch (e) {
-      print("[AuthController] Error cargando datos locales del UserModel para $userId: $e");
-      localUser.value = null;
+      print("[AuthController] Error cargando UserModel local para $userId: $e");
+      localUser.value = null; 
     }
   }
-
+  
   void updateLocalUser(UserModel updatedUser) {
-    // Asegúrate que el ID del appwriteUser (Auth) coincide con el $id del UserModel (DB)
     if (appwriteUser.value != null && appwriteUser.value!.$id == updatedUser.$id) {
       localUser.value = updatedUser;
-      print("[AuthController] UserModel local actualizado. Nueva dirección: ${localUser.value?.defaultAddress}");
-      // Si la foto de perfil también se actualizó a través de UserModel, refrescar profileImageUrl
+      print("[AuthController] UserModel local ha sido actualizado en AuthController.");
+      print("  Nueva Dirección: ${localUser.value?.defaultAddress}");
+      print("  Nueva Latitud: ${localUser.value?.latitude}");
+      print("  Nueva Longitud: ${localUser.value?.longitude}");
+
       if (updatedUser.profileImageId != null && updatedUser.profileImageId!.isNotEmpty) {
-          profileImageUrl.value = _authRepository.getProfilePictureUrl(updatedUser.profileImageId!);
+          final newUrl = _authRepository.getProfilePictureUrl(updatedUser.profileImageId!);
+          if (profileImageUrl.value != newUrl) {
+            profileImageUrl.value = newUrl;
+          }
       } else if (updatedUser.profileImageId == null || updatedUser.profileImageId!.isEmpty) {
-          profileImageUrl.value = ''; // O tu placeholder
+
+           if(profileImageUrl.value.isNotEmpty && !profileImageUrl.value.contains("placehold.co")) {
+             profileImageUrl.value = ''; 
+           }
       }
     } else {
-       print("[AuthController] No se pudo actualizar localUser: IDs no coinciden o appwriteUser es null.");
+      print("[AuthController] No se pudo actualizar localUser: IDs no coinciden o appwriteUser (Auth) es null.");
     }
   }
 
   Future<void> _loadCurrentUserOnStartup({bool showGlobalLoading = true}) async {
     if (showGlobalLoading) isLoading.value = true;
     error.value = '';
-    localUser.value = null; // Limpiar datos locales al inicio
+    localUser.value = null; 
     profileImageUrl.value = '';
 
     try {
       final isLoggedIn = await _authRepository.isLoggedIn();
       if (isLoggedIn) {
-        appwrite_auth_models.User? fetchedUser = await _authRepository.account.get();
-        if (fetchedUser != null) {
-          appwriteUser.value = fetchedUser;
-          _loadProfilePictureFromPrefs(fetchedUser.prefs.data); // Cargar foto de prefs
-          await _fetchLocalUserData(fetchedUser.$id); // Cargar datos de la colección 'users'
+        appwrite_auth_models.User? fetchedAuthUser = await _authRepository.account.get();
+        if (fetchedAuthUser != null) {
+          appwriteUser.value = fetchedAuthUser;
+          _loadProfilePictureFromPrefs(fetchedAuthUser.prefs.data); 
+          await _fetchLocalUserData(fetchedAuthUser.$id); 
 
-          if (fetchedUser.prefs.data == null || !fetchedUser.prefs.data.containsKey('coupons')) {
+          if (fetchedAuthUser.prefs.data == null || !fetchedAuthUser.prefs.data.containsKey('coupons')) {
             await _initializeCouponsForUser();
           }
         } else {
           appwriteUser.value = null;
         }
       } else {
-        appwriteUser.value = null;
+        appwriteUser.value = null; 
       }
     } catch (e) {
       print("[AUTH_CTRL._loadCurrentUserOnStartup] Error cargando usuario: $e");
-      appwriteUser.value = null;
+      appwriteUser.value = null; 
     } finally {
       if (showGlobalLoading) isLoading.value = false;
     }
   }
 
   void _loadProfilePictureFromPrefs(Map<String, dynamic>? prefsData) {
-    profileImageUrl.value = ''; // Resetea primero
+    profileImageUrl.value = ''; 
     if (prefsData != null && prefsData.containsKey(_profileImageIdKey)) {
       final String? fileId = prefsData[_profileImageIdKey];
       if (fileId != null && fileId.isNotEmpty) {
@@ -121,21 +145,23 @@ class AuthController extends GetxController {
   
   Future<void> reloadUser() async {
     print("[AUTH_CTRL.reloadUser] Recargando datos del usuario...");
-    await _loadCurrentUserOnStartup(showGlobalLoading: false); // Esto recargará appwriteUser y localUser
+
+    bool wasLoading = isLoading.value;
+    await _loadCurrentUserOnStartup(showGlobalLoading: false);
+    if (wasLoading) isLoading.value = true; 
   }
 
   Future<void> login(String email, String password) async {
-    isLoading.value = true;
-    error.value = '';
+    isLoading.value = true; error.value = '';
     try {
       await _authRepository.login(email: email, password: password);
-      appwrite_auth_models.User? fetchedUser = await _authRepository.account.get();
-      if (fetchedUser != null) {
-        appwriteUser.value = fetchedUser;
-        _loadProfilePictureFromPrefs(fetchedUser.prefs.data);
-        await _fetchLocalUserData(fetchedUser.$id); // Cargar datos de la colección 'users'
+      appwrite_auth_models.User? fetchedAuthUser = await _authRepository.account.get();
+      if (fetchedAuthUser != null) {
+        appwriteUser.value = fetchedAuthUser;
+        _loadProfilePictureFromPrefs(fetchedAuthUser.prefs.data);
+        await _fetchLocalUserData(fetchedAuthUser.$id);
 
-        if (fetchedUser.prefs.data == null || !fetchedUser.prefs.data.containsKey('coupons')) {
+        if (fetchedAuthUser.prefs.data == null || !fetchedAuthUser.prefs.data.containsKey('coupons')) {
           await _initializeCouponsForUser();
         }
         Get.offAll(() => HomePage());
@@ -145,92 +171,101 @@ class AuthController extends GetxController {
       }
     } catch (e) {
       print("[AUTH_CTRL.login] Error: $e");
-      // ... (tu manejo de errores existente) ...
-      appwriteUser.value = null;
-      localUser.value = null; // Limpiar también
-      profileImageUrl.value = '';
+      appwriteUser.value = null; localUser.value = null; profileImageUrl.value = '';
+      if (e is AppwriteException) {
+        if (e.code == 401) { error.value = "Correo o contraseña incorrectos."; }
+        else if (e.code == 400 && e.message != null && e.message!.toLowerCase().contains("invalid email")){ error.value = "El formato del correo no es válido.";}
+        else { error.value = "Error de Appwrite (login): ${e.message ?? e.type} (Código: ${e.code})"; }
+      } else if (!e.toString().contains("No se pudo obtener la información")) {
+         error.value = "Error de inicio de sesión. Intenta de nuevo.";
+      }
     } finally {
       isLoading.value = false;
     }
   }
 
   Future<void> register(String email, String password, String name) async {
-    isLoading.value = true;
-    error.value = '';
+    isLoading.value = true; error.value = '';
     try {
       appwrite_auth_models.User newUserAccount = await _authRepository.createAccount(
           email: email, password: password, name: name);
-      
-      // Crear perfil público en usersCollectionId
       await _userRepository.createOrUpdatePublicUserProfile(
         userId: newUserAccount.$id,
         name: name, 
         email: email,
-        profileImageId: null, // Sin foto de perfil al registrarse
-        defaultAddress: null, // Sin dirección al registrarse
+        profileImageId: null, 
+        defaultAddress: null,
+        latitude: null,
+        longitude: null,
       );
 
-      await login(email, password); // login se encargará de cargar localUser y navegar
+      await login(email, password); 
     } catch (e) {
       print("[AUTH_CTRL.register] Error: $e");
-      // ... (tu manejo de errores existente) ...
-      appwriteUser.value = null;
-      localUser.value = null;
-      profileImageUrl.value = '';
+      appwriteUser.value = null; localUser.value = null; profileImageUrl.value = '';
+      if (error.value.isEmpty) { 
+        if (e is AppwriteException) {
+          if (e.code == 409) { error.value = "Ya existe una cuenta con este correo."; }
+          else if (e.code == 400 && e.message != null && e.message!.toLowerCase().contains("password")){ error.value = "La contraseña debe tener al menos 8 caracteres.";}
+          else if (e.code == 400 && e.message != null && e.message!.toLowerCase().contains("email")){ error.value = "El formato del correo no es válido.";}
+          else { error.value = "Error de registro (Appwrite): ${e.message ?? e.type} (Código: ${e.code})"; }
+        } else { error.value = "Error de registro. Intenta de nuevo."; }
+      }
     } finally {
       isLoading.value = false;
     }
   }
 
   Future<void> logout() async {
-    isLoading.value = true;
-    error.value = '';
+    isLoading.value = true; error.value = '';
     try {
       await _authRepository.logout();
     } catch (e) {
       print("[AUTH_CTRL.logout] Error al cerrar sesión en Appwrite: $e");
     } finally {
-      appwriteUser.value = null;
-      localUser.value = null; // Limpiar datos locales
+      appwriteUser.value = null; 
+      localUser.value = null;
       profileImageUrl.value = '';
-      isLoading.value = false;
+      isLoading.value = false; 
       Get.offAll(() => LoginPage());
     }
   }
 
   Future<bool> updateProfileName(String newName, {bool showLoadingIndicator = true}) async {
-    if (appwriteUser.value == null) {
-      error.value = "Usuario no autenticado.";
-      return false;
+    if (appwriteUser.value == null) { error.value = "Usuario no autenticado."; return false; }
+    if (localUser.value == null && appwriteUser.value != null) {
+        await _fetchLocalUserData(appwriteUser.value!.$id);
+        if (localUser.value == null) {
+            error.value = "Datos de perfil local no disponibles. Intenta más tarde.";
+            return false;
+        }
+    } else if (localUser.value == null) {
+        error.value = "Datos de perfil local no disponibles.";
+        return false;
     }
-    if (showLoadingIndicator) isLoading.value = true;
-    error.value = '';
+
+
+    if (showLoadingIndicator) isLoading.value = true; error.value = '';
     try {
-      final String oldName = appwriteUser.value!.name;
+      final String oldName = localUser.value!.username; 
       final String userId = appwriteUser.value!.$id;
-      final String userEmail = appwriteUser.value!.email;
-
-      // Actualizar nombre en Appwrite Auth
-      /*appwrite_auth_models.User updatedAuthAccount =*/ await _authRepository.updateUserName(newName);
       
-      // Actualizar nombre en el perfil público de la colección 'users'
-      // Obtener el ID de la foto de perfil y dirección actual del localUser o prefs
-      final String? currentProfileImageId = localUser.value?.profileImageId ?? appwriteUser.value?.prefs.data[_profileImageIdKey];
-      final String? currentDefaultAddress = localUser.value?.defaultAddress;
-
+      await _authRepository.updateUserName(newName); 
+      
       UserModel updatedLocalUser = await _userRepository.createOrUpdatePublicUserProfile(
         userId: userId,
-        name: newName,
-        email: userEmail,
-        profileImageId: currentProfileImageId,
-        defaultAddress: currentDefaultAddress,
+        name: newName, 
+        email: localUser.value!.email, 
+        profileImageId: localUser.value!.profileImageId, 
+        defaultAddress: localUser.value!.defaultAddress, 
+        latitude: localUser.value!.latitude,             
+        longitude: localUser.value!.longitude,        
       );
       
-      updateLocalUser(updatedLocalUser); // Actualizar el modelo local
-      appwriteUser.value = await _authRepository.account.get(); // Refrescar appwriteUser
+      updateLocalUser(updatedLocalUser); 
+      appwriteUser.value = await _authRepository.account.get(); 
 
       if (oldName != newName) {
-        print("[AUTH_CTRL.updateProfileName] Name changed from '$oldName' to '$newName'. Updating listings...");
         await _gameListingController.updateSellerNameForUserListings(userId, newName);
       }
       return true;
@@ -244,50 +279,48 @@ class AuthController extends GetxController {
   }
 
   Future<bool> updateProfilePicture(File imageFile, {bool showLoadingIndicator = true}) async {
-    if (appwriteUser.value == null) {
-      error.value = "Usuario no autenticado.";
-      return false;
+    if (appwriteUser.value == null) { error.value = "Usuario no autenticado."; return false; }
+     if (localUser.value == null && appwriteUser.value != null) {
+        await _fetchLocalUserData(appwriteUser.value!.$id);
+        if (localUser.value == null) {
+            error.value = "Datos de perfil local no disponibles. Intenta más tarde.";
+            return false;
+        }
+    } else if (localUser.value == null) {
+         error.value = "Datos de perfil local no disponibles.";
+        return false;
     }
+    
     final String userId = appwriteUser.value!.$id;
-    // Usar el nombre y email del localUser o appwriteUser más actual
-    final String userName = localUser.value?.username ?? appwriteUser.value!.name;
-    final String userEmail = localUser.value?.email ?? appwriteUser.value!.email;
-    final String? userAddress = localUser.value?.defaultAddress;
 
-
-    if (showLoadingIndicator) isLoading.value = true;
-    error.value = '';
-
+    if (showLoadingIndicator) isLoading.value = true; error.value = '';
     try {
-      final String? oldProfileImageId = localUser.value?.profileImageId ?? appwriteUser.value?.prefs.data[_profileImageIdKey];
-
+      final String? oldProfileImageIdOnPrefs = appwriteUser.value?.prefs.data[_profileImageIdKey];
+      final String? oldProfileImageIdOnLocal = localUser.value!.profileImageId;
+      final String? effectiveOldProfileImageId = oldProfileImageIdOnLocal ?? oldProfileImageIdOnPrefs;
       final String? newProfileImageId = await _authRepository.uploadProfilePicture(imageFile, userId);
       if (newProfileImageId == null) {
         error.value = "No se pudo subir la nueva foto de perfil.";
         throw Exception(error.value);
       }
-
-      // Actualizar prefs en Appwrite Auth
       await _authRepository.updateUserPrefs({_profileImageIdKey: newProfileImageId});
-      
-      // Actualizar perfil público en la colección 'users'
+
       UserModel updatedLocalUserDoc = await _userRepository.createOrUpdatePublicUserProfile(
         userId: userId,
-        name: userName,
-        email: userEmail,
-        profileImageId: newProfileImageId,
-        defaultAddress: userAddress,
+        name: localUser.value!.username,
+        email: localUser.value!.email,
+        profileImageId: newProfileImageId, 
+        defaultAddress: localUser.value!.defaultAddress,
+        latitude: localUser.value!.latitude,
+        longitude: localUser.value!.longitude,
       );
       
-      // Actualizar estado local
-      updateLocalUser(updatedLocalUserDoc);
-      appwriteUser.value = await _authRepository.account.get(); // Refrescar appwriteUser
-      _loadProfilePictureFromPrefs(appwriteUser.value!.prefs.data); // Esto actualizará profileImageUrl
+      updateLocalUser(updatedLocalUserDoc); 
+      appwriteUser.value = await _authRepository.account.get();
 
-
-      if (oldProfileImageId != null && oldProfileImageId.isNotEmpty && oldProfileImageId != newProfileImageId) {
+      if (effectiveOldProfileImageId != null && effectiveOldProfileImageId.isNotEmpty && effectiveOldProfileImageId != newProfileImageId) {
         try {
-          await _authRepository.deleteProfilePicture(oldProfileImageId);
+          await _authRepository.deleteProfilePicture(effectiveOldProfileImageId);
         } catch (deleteError) {
           print("[AUTH_CTRL.updateProfilePicture] Error borrando foto antigua (no crítico): $deleteError");
         }
@@ -303,7 +336,6 @@ class AuthController extends GetxController {
       if (showLoadingIndicator) isLoading.value = false;
     }
   }
-
 
   Future<File?> pickProfileImage(ImageSource source) async {
     try {
@@ -321,7 +353,6 @@ class AuthController extends GetxController {
     return null;
   }
 
-  // ... (tus métodos de cupones existentes) ...
   Future<void> _initializeCouponsForUser() async {
     if (appwriteUser.value == null) return;
     print("[AUTH_CTRL._initializeCouponsForUser] Initializing coupons...");
@@ -339,7 +370,6 @@ class AuthController extends GetxController {
       Map<String, dynamic> currentPrefs = Map<String, dynamic>.from(appwriteUser.value!.prefs.data ?? {});
       currentPrefs['coupons'] = initialCoupons;
       await _authRepository.updateUserPrefs(currentPrefs);
-      // Recargar appwriteUser para tener las prefs actualizadas
       appwrite_auth_models.User? updatedUser = await _authRepository.account.get();
       if (updatedUser != null) {
         appwriteUser.value = updatedUser;
@@ -400,8 +430,11 @@ class AuthController extends GetxController {
   }
 
   String? get currentUserId => appwriteUser.value?.$id;
-  String? get currentUserName => localUser.value?.username ?? appwriteUser.value?.name; // Prioriza nombre de UserModel
+  String? get currentUserName => localUser.value?.username ?? appwriteUser.value?.name;
   String? get currentUserEmail => appwriteUser.value?.email;
   bool get isUserLoggedIn => appwriteUser.value != null;
-  String? get currentUserDefaultAddress => localUser.value?.defaultAddress; // Getter para la dirección
+  String? get currentUserDefaultAddress => localUser.value?.defaultAddress;
+  double? get currentUserLatitude => localUser.value?.latitude;
+  double? get currentUserLongitude => localUser.value?.longitude;
+  String get profilePictureUrl => profileImageUrl.value;
 }

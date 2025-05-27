@@ -1,4 +1,3 @@
-// lib/presentation/pages/start_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:proyecto_final/controllers/auth_controller.dart';
@@ -11,28 +10,16 @@ class StartPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Opcional: Verificar si el usuario ya está logueado al entrar a StartPage
-    // Esto es útil si StartPage es la primera página absoluta.
-    // En main.dart ya se hace una verificación, pero esto puede ser una doble guarda.
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   final authController = Get.find<AuthController>();
-    //   if (authController.isUserLoggedIn) {
-    //     Get.offAll(() => HomePage());
-    //   }
-    // });
-
-
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/pagina.jpg', // Asegúrate que esta imagen exista
+            'assets/pagina.jpg', 
             fit: BoxFit.cover,
-            // Error builder para la imagen de fondo
             errorBuilder: (context, error, stackTrace) {
               return Container(
-                color: Colors.grey[800], // Color de fondo si la imagen falla
+                color: Colors.grey[800], 
                 child: const Center(
                   child: Text(
                     'GameShopX',
@@ -47,20 +34,20 @@ class StartPage extends StatelessWidget {
             },
           ),
           Container(
-            color: Colors.black.withOpacity(0.65), // Un poco más de opacidad para legibilidad
+            color: Colors.black.withOpacity(0.65),
           ),
-          SafeArea( // Para evitar que el contenido se superponga con la barra de estado/notches
+          SafeArea(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Spacer(flex: 2), // Empujar contenido un poco hacia abajo
+                const Spacer(flex: 2), 
                 Text(
                   'Bienvenido a GameShopX',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 36, // Ligeramente más grande
+                    fontSize: 36, 
                     fontWeight: FontWeight.bold,
-                    shadows: [ // Sombra para destacar el texto
+                    shadows: [ 
                       Shadow(
                         blurRadius: 10.0,
                         color: Colors.black.withOpacity(0.5),
@@ -74,7 +61,7 @@ class StartPage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40.0),
                   child: Text(
-                    'Tu mercado de juegos de confianza.', // Subtítulo
+                    'Tu mercado de juegos de confianza.', 
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.85),
                       fontSize: 18,
@@ -100,7 +87,7 @@ class StartPage extends StatelessWidget {
                   backgroundColor: Colors.tealAccent,
                   foregroundColor: Colors.black87,
                 ),
-                const Spacer(flex: 3), // Más espacio al final
+                const Spacer(flex: 3), 
               ],
             ),
           )
@@ -123,12 +110,12 @@ class StartPage extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: backgroundColor,
         foregroundColor: foregroundColor,
-        padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15), // Padding generoso
+        padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15), 
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30), // Botones más redondeados
+          borderRadius: BorderRadius.circular(30), 
         ),
-        elevation: 5, // Sombra para los botones
+        elevation: 5, 
       ),
     );
   }

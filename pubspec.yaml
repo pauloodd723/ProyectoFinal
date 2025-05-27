@@ -5,8 +5,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.7.0 <4.0.0' # Asegúrate que tu SDK sea compatible con flutter_web_auth_2 ^4.0.0
-
+  sdk: '>=3.7.0 <4.0.0'
 dependencies:
   flutter:
     sdk: flutter
@@ -16,7 +15,7 @@ dependencies:
   latlong2: ^0.9.1
   cupertino_icons: ^1.0.8
   get: ^4.7.2
-  appwrite: ^15.0.2 # Mantén tu versión de appwrite
+  appwrite: ^15.0.2
   intl: ^0.19.0
   image_picker: ^1.1.2
 
@@ -25,9 +24,6 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
-# NUEVA SECCIÓN: Anula la versión de flutter_web_auth_2
-# Esto le dice a Flutter que use la versión 4.0.0 de flutter_web_auth_2
-# en lugar de la 3.1.2 que appwrite podría estar solicitando.
 dependency_overrides:
   flutter_web_auth_2: ^4.0.0
 

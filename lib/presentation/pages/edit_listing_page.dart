@@ -1,4 +1,3 @@
-// lib/presentation/pages/edit_listing_page.dart
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -28,11 +27,10 @@ class _EditListingPageState extends State<EditListingPage> {
   late TextEditingController _descriptionController;
   late TextEditingController _conditionController;
 
-  XFile? _pickedImageXFile; // Para la nueva imagen seleccionada
-  Uint8List? _newImageBytes; // Bytes de la nueva imagen para preview
-  String? _currentFileIdInDocument; // ID del archivo de imagen actual (originalmente widget.listing.imageUrl)
-  String? _currentImageUrlPreview; // URL de la imagen actual para preview inicial
-
+  XFile? _pickedImageXFile; 
+  Uint8List? _newImageBytes; 
+  String? _currentFileIdInDocument;
+  String? _currentImageUrlPreview;
   @override
   void initState() {
     super.initState();
@@ -41,8 +39,8 @@ class _EditListingPageState extends State<EditListingPage> {
     _descriptionController = TextEditingController(text: widget.listing.description);
     _conditionController = TextEditingController(text: widget.listing.gameCondition);
     
-    _currentFileIdInDocument = widget.listing.imageUrl; // Este es el ID del archivo
-    _currentImageUrlPreview = widget.listing.getDisplayImageUrl(); // Este construye la URL para mostrar
+    _currentFileIdInDocument = widget.listing.imageUrl; 
+    _currentImageUrlPreview = widget.listing.getDisplayImageUrl(); 
   }
 
   @override
@@ -64,7 +62,7 @@ class _EditListingPageState extends State<EditListingPage> {
     if (pickedXFile != null) {
       _pickedImageXFile = pickedXFile;
       _newImageBytes = await _pickedImageXFile!.readAsBytes();
-      setState(() {}); // Actualizar UI para mostrar la nueva imagen
+      setState(() {}); 
     }
   }
 
@@ -116,10 +114,9 @@ class _EditListingPageState extends State<EditListingPage> {
       'price': double.tryParse(_priceController.text) ?? widget.listing.price,
       'description': _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
       'gameCondition': _conditionController.text.isNotEmpty ? _conditionController.text : null,
-      // 'imageUrl' será manejado por el GameListingController al pasar el nuevo File y el ID antiguo.
     };
 
-    File? fileToUpload; // El File para la nueva imagen, si se seleccionó una
+    File? fileToUpload; 
     if (_pickedImageXFile != null) {
       if (kIsWeb) {
         print("ADVERTENCIA (EditListingPage): La subida de archivos desde web con XFile.path como File es problemática.");
@@ -129,7 +126,6 @@ class _EditListingPageState extends State<EditListingPage> {
           snackPosition: SnackPosition.BOTTOM, 
           duration: const Duration(seconds: 7)
         );
-        // Considera no crear el File o manejarlo diferente para web
       }
       try {
         fileToUpload = File(_pickedImageXFile!.path);
@@ -140,17 +136,16 @@ class _EditListingPageState extends State<EditListingPage> {
       }
     }
 
-    // Se pasa _currentFileIdInDocument, que es el widget.listing.imageUrl (ID del archivo actual)
     await gameListingController.updateListing(
       widget.listing.id,
-      dataFromForm, // Datos del formulario (sin el ID de imagen explícito aquí)
+      dataFromForm, 
       userId,
-      fileToUpload, // Nueva imagen (File) si la hay
-      _currentFileIdInDocument, // ID del archivo de imagen actual en el documento
+      fileToUpload, 
+      _currentFileIdInDocument, 
     );
 
     if (gameListingController.error.value.isEmpty) {
-      Get.back(); // Volver a la página anterior
+      Get.back(); 
       Get.snackbar(
         "Éxito",
         "Artículo actualizado correctamente.",
@@ -187,8 +182,7 @@ class _EditListingPageState extends State<EditListingPage> {
                         confirmTextColor: Colors.white,
                         buttonColor: Theme.of(context).colorScheme.error,
                         onConfirm: () async {
-                          Get.back(); // Cerrar diálogo
-                          // Pasar widget.listing.imageUrl (ID del archivo) al controlador
+                          Get.back(); 
                           await gameListingController.deleteListing(widget.listing.id, widget.listing.imageUrl);
                            if (gameListingController.error.value.isNotEmpty) {
                                 Get.snackbar("Error", "No se pudo eliminar el artículo: ${gameListingController.error.value}",
@@ -204,7 +198,7 @@ class _EditListingPageState extends State<EditListingPage> {
             )
         ],
       ),
-      body: Obx(() { // Para reaccionar a gameListingController.isLoading
+      body: Obx(() { 
         return Stack(
           children: [
             Padding(
@@ -223,11 +217,11 @@ class _EditListingPageState extends State<EditListingPage> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.grey[400]!),
                         ),
-                        child: _newImageBytes != null // Si hay una nueva imagen seleccionada (en bytes)
+                        child: _newImageBytes != null 
                             ? ClipRRect( 
                                 borderRadius: BorderRadius.circular(11),
                                 child: Image.memory(_newImageBytes!, fit: BoxFit.cover))
-                            : (_currentImageUrlPreview != null && _currentImageUrlPreview!.isNotEmpty // Sino, si hay una URL de la imagen actual
+                            : (_currentImageUrlPreview != null && _currentImageUrlPreview!.isNotEmpty 
                                 ? ClipRRect( 
                                     borderRadius: BorderRadius.circular(11),
                                     child: Image.network(
@@ -239,7 +233,7 @@ class _EditListingPageState extends State<EditListingPage> {
                                         return const Center(child: CircularProgressIndicator());
                                       },
                                     ))
-                                : Column( // Placeholder si no hay ninguna imagen
+                                : Column( 
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Icon(Icons.add_a_photo, size: 50, color: Colors.grey[700]),

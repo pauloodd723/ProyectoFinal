@@ -1,17 +1,13 @@
-// lib/controllers/chat_controller.dart
 import 'dart:async';
 import 'package:get/get.dart';
-import 'package:appwrite/appwrite.dart'; // Para Cliente, Account, Databases, Realtime Y DEBERÍA exportar RealtimeMessage y User
-import 'package:appwrite/models.dart' as appwrite_models; // Alias para User, consistente con AuthController
-
+import 'package:appwrite/appwrite.dart'; 
+import 'package:appwrite/models.dart' as appwrite_models; 
 import 'package:proyecto_final/data/repositories/chat_repository.dart';
 import 'package:proyecto_final/data/repositories/message_repository.dart';
 import 'package:proyecto_final/model/chat_model.dart';
 import 'package:proyecto_final/model/message_model.dart';
 import 'package:proyecto_final/controllers/auth_controller.dart';
 import 'package:collection/collection.dart';
-
-// IMPORTS PARA NOTIFICACIONES
 import 'package:proyecto_final/controllers/notification_controller.dart';
 import 'package:proyecto_final/controllers/game_listing_controller.dart';
 import 'package:proyecto_final/model/game_listing_model.dart';
@@ -36,8 +32,6 @@ class ChatController extends GetxController {
   final RxString messagesError = ''.obs;
   final RxBool isSendingMessage = false.obs;
 
-  // TIPO DIRECTO RealtimeMessage porque MessageRepository lo devuelve así
-  // y la importación de 'package:appwrite/appwrite.dart' debería hacerlo disponible.
   StreamSubscription<RealtimeMessage>? _messageStreamSubscription;
 
   @override
@@ -46,8 +40,6 @@ class ChatController extends GetxController {
     _authController = Get.find<AuthController>();
     _notificationController = Get.find<NotificationController>();
     _gameListingController = Get.find<GameListingController>();
-
-    // AuthController usa appwrite_models.User en su Rx<appwrite_models.User?> appwriteUser
     ever(_authController.appwriteUser, (appwrite_models.User? user) {
       _handleUserChangeForChats(user);
     });
@@ -57,7 +49,6 @@ class ChatController extends GetxController {
     }
   }
 
-  // El parámetro user viene del AuthController, que usa el alias appwrite_models.
   void _handleUserChangeForChats(appwrite_models.User? user) {
     if (user != null) {
       loadUserChats();
@@ -177,9 +168,8 @@ class ChatController extends GetxController {
   void subscribeToMessages(String chatId) {
     print("[ChatController] Intentando suscribirse a mensajes para el chat: $chatId");
     
-    // _messageRepository.subscribeToNewMessages(chatId) devuelve Stream<RealtimeMessage> (directo)
     _messageStreamSubscription = _messageRepository.subscribeToNewMessages(chatId).listen(
-      (RealtimeMessage realtimeMessage) { // <--- TIPO DIRECTO RealtimeMessage
+      (RealtimeMessage realtimeMessage) { 
         final List<String> events = realtimeMessage.events;
         final Map<String, dynamic> payload = realtimeMessage.payload;
         print("[ChatController] Mensaje Realtime recibido. Eventos: $events, Payload: $payload");

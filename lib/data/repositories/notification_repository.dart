@@ -1,4 +1,3 @@
-// lib/data/repositories/notification_repository.dart
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart' as appwrite_models;
 import 'package:proyecto_final/core/constants/appwrite_constants.dart';
@@ -29,12 +28,8 @@ class NotificationRepository {
           if (relatedListingId != null) 'relatedListingId': relatedListingId,
           if (relatedBuyerId != null) 'relatedBuyerId': relatedBuyerId,
           if (relatedBuyerName != null) 'relatedBuyerName': relatedBuyerName,
-          'isRead': false, // Las notificaciones nuevas no están leídas
+          'isRead': false, 
         },
-        // Los permisos de documento deberían estar configurados por defecto en la colección
-        // para que solo el recipientId pueda leer/actualizar.
-        // La creación la está haciendo el usuario actual (comprador).
-        // Si quieres restringir más, necesitarías una Appwrite Function.
       );
       print("[NotificationRepository] Notificación creada para $recipientId: $message");
     } catch (e) {
@@ -50,7 +45,7 @@ class NotificationRepository {
         collectionId: AppwriteConstants.notificationsCollectionId,
         queries: [
           Query.equal('recipientId', userId),
-          Query.orderDesc('\$createdAt'), // Las más nuevas primero
+          Query.orderDesc('\$createdAt'), 
         ],
       );
       return response.documents

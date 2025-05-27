@@ -1,4 +1,3 @@
-// lib/data/repositories/chat_repository.dart
 import 'package:appwrite/appwrite.dart';
 import 'package:proyecto_final/core/constants/appwrite_constants.dart';
 import 'package:proyecto_final/model/chat_model.dart';
@@ -40,7 +39,6 @@ class ChatRepository {
         UserModel? otherUserProfile = await _userRepository.getUserById(otherUserId);
 
         if (currentUserProfile == null || otherUserProfile == null) {
-          // CORREGIDO AQUÍ: Acceder a .$id en lugar de .id
           print("[ChatRepository] Error: No se pudo obtener el perfil de uno o ambos usuarios. CurrentUser: ${currentUserProfile?.$id}, OtherUser: ${otherUserProfile?.$id}");
           return null;
         }
@@ -53,7 +51,6 @@ class ChatRepository {
 
         if (participantsArray[0] == currentUserId) {
             participantNames = [currentUserName, otherUserName];
-            // CORREGIDO AQUÍ: Acceder a .$id en lugar de .id (aunque profileImageId no es .$id, el error era genérico de .id)
             participantPhotoIds = [currentUserProfile.profileImageId ?? '', otherUserProfile.profileImageId ?? ''];
         } else {
             participantNames = [otherUserName, currentUserName];
@@ -72,7 +69,6 @@ class ChatRepository {
             'lastMessageTimestamp': DateTime.now().toIso8601String(),
             if (listingId != null && listingId.isNotEmpty) 'listingId': listingId,
           },
-          // permissions: [ ... ], // DESCOMENTA ESTO DESPUÉS DEL DIAGNÓSTICO
         );
         print("[ChatRepository] Nuevo chat creado con ID: ${newChatDoc.$id}");
         return ChatModel.fromJson(newChatDoc.data);

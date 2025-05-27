@@ -1,4 +1,3 @@
-// lib/controllers/game_listing_controller.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -7,7 +6,7 @@ import 'package:proyecto_final/data/repositories/game_listing_repository.dart';
 import 'package:proyecto_final/model/game_listing_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:appwrite/appwrite.dart';
-import 'package:proyecto_final/core/constants/appwrite_constants.dart'; // For Query
+import 'package:proyecto_final/core/constants/appwrite_constants.dart'; 
 
 class GameListingController extends GetxController {
   final GameListingRepository repository;
@@ -35,11 +34,8 @@ class GameListingController extends GetxController {
   }
 
   Future<void> fetchListings({String? search, PriceSortOption? sortOption, bool forceRefresh = false}) async {
-    // If not forcing refresh and listings are already populated for the same search/sort, might skip.
-    // However, for simplicity, we'll always fetch for now unless it's just a sort/search update.
     if (!forceRefresh && listings.isNotEmpty && search == searchQuery.value && sortOption == currentSortOption.value && !isLoading.value) {
-       // If only sortOption or search triggered this, and we already have data, this logic might be too simple.
-       // The debounce and ever listeners should handle re-fetching appropriately.
+
     }
 
     try {
@@ -58,16 +54,14 @@ class GameListingController extends GetxController {
     }
   }
 
-  // NEW: Fetch listings for a specific seller
   Future<void> fetchListingsForSeller(String sellerId) async {
     try {
       isLoadingSellerListings.value = true;
-      error.value = ''; // Clear general error or use a specific one for seller listings
-      final fetched = await repository.getGameListings(sellerId: sellerId, sortOption: PriceSortOption.none); // Default sort for seller page or add specific sort
+      error.value = ''; 
+      final fetched = await repository.getGameListings(sellerId: sellerId, sortOption: PriceSortOption.none); 
       sellerListings.assignAll(fetched);
     } catch (e) {
       print("[GameListingController] Error al cargar listados del vendedor $sellerId: $e");
-      // Optionally set a specific error for seller listings
       sellerListings.clear();
     } finally {
       isLoadingSellerListings.value = false;
@@ -101,16 +95,15 @@ class GameListingController extends GetxController {
         print("[GameListingController.addListing] No se proporcionó imageFile.");
       }
       
-      // Ensure status is 'available' when adding
       final GameListingModel listingToAdd = newListingData.copyWith(status: 'available');
 
 
       await repository.addGameListing(
-        listingToAdd, // Use the model with status set
+        listingToAdd,
         currentUserId,
         uploadedFileId: uploadedFileId,
       );
-      fetchListings(forceRefresh: true); // Force refresh to see the new item
+      fetchListings(forceRefresh: true);
     } catch (e) {
       print("[GameListingController] Error al añadir el listado: $e");
       error.value = "Error al añadir el listado: ${e.toString()}";
@@ -143,15 +136,12 @@ class GameListingController extends GetxController {
 
       Map<String, dynamic> dataToUpdateInDb = {...dataFromForm};
       dataToUpdateInDb['imageUrl'] = finalFileIdForDocument;
-      // Ensure status is not accidentally overwritten if not in form
       if (!dataToUpdateInDb.containsKey('status')) {
         final existingListing = listings.firstWhereOrNull((l) => l.id == documentId);
         if (existingListing != null) {
           dataToUpdateInDb['status'] = existingListing.status;
         } else {
-            // If not found in current listings (e.g. editing from a different context),
-            // fetch it or assume 'available' if status is crucial here.
-            // For now, we assume the form won't mess with status unless intended.
+
         }
       }
 
@@ -223,20 +213,13 @@ class GameListingController extends GetxController {
     }
   }
 
-  // NEW: Method called by AuthController to update sellerName in listings
   Future<bool> updateSellerNameForUserListings(String sellerId, String newSellerName) async {
     print("[GameListingController.updateSellerNameForUserListings] Updating listings for seller $sellerId to name $newSellerName");
     bool allSuccess = true;
     try {
-      // Fetch all listings by this seller (including sold ones, if necessary, though not typical to update sold records)
-      // For simplicity, let's fetch all and update. A more optimized way would be Query.equal('sellerId', sellerId)
-      // and then iterate. GameListingRepository needs a method for this.
-      // Let's assume we get a list of their listings (or their IDs)
-      // This is a simplified example; direct fetching of user's listings is better.
       
-      isLoading.value = true; // Show loading as this can take time
+      isLoading.value = true; 
 
-      // Fetch listings specifically for this seller ID without status filter initially
       final sellerDocs = await repository.databases.listDocuments(
         databaseId: AppwriteConstants.databaseId,
         collectionId: AppwriteConstants.gameListingsCollectionId,
@@ -246,7 +229,7 @@ class GameListingController extends GetxController {
       if (sellerDocs.documents.isEmpty) {
         print("[GameListingController.updateSellerNameForUserListings] No listings found for seller $sellerId.");
         isLoading.value = false;
-        return true; // No listings to update, so technically success.
+        return true; 
       }
       
       print("[GameListingController.updateSellerNameForUserListings] Found ${sellerDocs.documents.length} listings for seller $sellerId.");
@@ -256,12 +239,10 @@ class GameListingController extends GetxController {
           await repository.updateListingSellerName(doc.$id, newSellerName);
         } catch (e) {
           print("[GameListingController.updateSellerNameForUserListings] Failed to update listing ${doc.$id}: $e");
-          allSuccess = false; // Mark that at least one update failed
+          allSuccess = false; 
         }
       }
-      // Refresh the main listings view if any changes occurred
       await fetchListings(forceRefresh: true);
-      // Also refresh sellerListings if they are currently populated for this user
       if (sellerListings.isNotEmpty && sellerListings.first.sellerId == sellerId) {
           await fetchListingsForSeller(sellerId);
       }
@@ -275,17 +256,15 @@ class GameListingController extends GetxController {
     return allSuccess;
   }
 
-  // NEW: Method to update a listing's status (e.g., to 'sold')
   Future<bool> updateListingStatus(String listingId, String newStatus, String currentUserId) async {
     try {
-      isLoading.value = true; // Or a more specific loader if needed
+      isLoading.value = true; 
       await repository.updateGameListing(
         listingId,
         {'status': newStatus},
-        currentUserId, // The user performing action (buyer, or system) - for permissions
+        currentUserId,
       );
-      await fetchListings(forceRefresh: true); // Refresh main listings
-      // If the listing was part of sellerListings, refresh that too
+      await fetchListings(forceRefresh: true);
       final listingIndexInSellerListings = sellerListings.indexWhere((l) => l.id == listingId);
       if (listingIndexInSellerListings != -1) {
           await fetchListingsForSeller(sellerListings[listingIndexInSellerListings].sellerId);

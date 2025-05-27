@@ -1,4 +1,3 @@
-// lib/data/repositories/purchase_history_repository.dart
 import 'package:appwrite/appwrite.dart';
 import 'package:proyecto_final/core/constants/appwrite_constants.dart';
 import 'package:proyecto_final/model/purchase_history_model.dart';
@@ -31,10 +30,8 @@ class PurchaseHistoryRepository {
           'listingTitle': listingTitle,
           'pricePaid': pricePaid,
           if (couponIdUsed != null) 'couponIdUsed': couponIdUsed,
-          'discountApplied': discountApplied ?? 0.0, // Asegura un valor
+          'discountApplied': discountApplied ?? 0.0, 
         },
-        // Permisos: el usuario autenticado (comprador) puede crear.
-        // Los permisos de lectura para buyerId y sellerId deben estar en la definición de la colección.
       );
       print("[PurchaseHistoryRepository] Registro de compra creado para el comprador $buyerId, juego $listingTitle.");
     } catch (e) {

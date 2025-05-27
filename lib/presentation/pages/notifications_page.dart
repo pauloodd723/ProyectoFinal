@@ -1,9 +1,10 @@
-// lib/presentation/pages/notifications_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart'; // Para formatear fechas
+import 'package:intl/intl.dart';
 import 'package:proyecto_final/controllers/notification_controller.dart';
 import 'package:proyecto_final/model/notification_model.dart';
+import 'package:proyecto_final/presentation/pages/seller_profile_page.dart'; 
+import 'package:proyecto_final/controllers/auth_controller.dart'; 
 
 class NotificationsPage extends StatelessWidget {
   const NotificationsPage({super.key});
@@ -11,53 +12,25 @@ class NotificationsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final NotificationController controller = Get.find();
-
-    // Formateador de fecha y hora
+    final AuthController authController = Get.find();
     final DateFormat dateTimeFormatter = DateFormat('dd/MM/yy, hh:mm a', 'es_CO');
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notificaciones'),
-        actions: [
-          Obx(() => controller.notifications.any((n) => !n.isRead)
-            ? IconButton(
-                icon: const Icon(Icons.mark_chat_read_outlined),
-                tooltip: 'Marcar todas como leídas (Próximamente)', // Funcionalidad futura
-                onPressed: () {
-                  // TODO: Implementar "Marcar todas como leídas"
-                  Get.snackbar('Próximamente', 'Función para marcar todas como leídas no implementada.');
-                },
-              )
-            : const SizedBox.shrink()
-          )
-        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value && controller.notifications.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
         if (controller.error.value.isNotEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Error: ${controller.error.value}'),
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: () => controller.fetchNotifications(),
-                    child: const Text('Reintentar'),
-                  )
-                ],
-              ),
-            )
-          );
+          // ... (tu manejo de error existente)
+          return Center(child: Text('Error: ${controller.error.value}'));
         }
         if (controller.notifications.isEmpty) {
           return Center(
             child: Text(
-              'No tienes notificaciones nuevas.',
+              'No tienes notificaciones.',
               style: Theme.of(context).textTheme.titleMedium,
             ),
           );
@@ -70,6 +43,22 @@ class NotificationsPage extends StatelessWidget {
             itemBuilder: (context, index) {
               final NotificationModel notification = controller.notifications[index];
               final bool isRead = notification.isRead;
+
+              IconData notificationIconData = Icons.notifications_active_rounded;
+              Color iconColor = isRead
+                  ? Theme.of(context).colorScheme.onSurfaceVariant
+                  : Theme.of(context).colorScheme.onPrimary;
+              Color avatarBgColor = isRead
+                  ? Theme.of(context).colorScheme.surfaceVariant
+                  : Theme.of(context).colorScheme.primary;
+
+              if (notification.type == 'sale_made') {
+                notificationIconData = Icons.monetization_on_outlined;
+              } else if (notification.type == 'purchase_confirmation') {
+                notificationIconData = Icons.shopping_bag_outlined;
+              } else if (notification.type == 'new_message') {
+                notificationIconData = Icons.message_outlined;
+              }
 
               return Dismissible(
                 key: Key(notification.id),
@@ -88,23 +77,16 @@ class NotificationsPage extends StatelessWidget {
                 ),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: isRead
-                        ? Theme.of(context).colorScheme.surfaceVariant
-                        : Theme.of(context).colorScheme.primary,
-                    child: Icon(
-                      notification.type == 'sale_made'
-                          ? Icons.attach_money_rounded
-                          : Icons.notifications_active_rounded,
-                      color: isRead
-                          ? Theme.of(context).colorScheme.onSurfaceVariant
-                          : Theme.of(context).colorScheme.onPrimary,
-                    ),
+                    backgroundColor: avatarBgColor,
+                    child: Icon(notificationIconData, color: iconColor),
                   ),
                   title: Text(
                     notification.message,
                     style: TextStyle(
                       fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
                     ),
+                    maxLines: 2, 
+                    overflow: TextOverflow.ellipsis,
                   ),
                   subtitle: Text(
                     dateTimeFormatter.format(notification.createdAt.toLocal()),
@@ -117,9 +99,25 @@ class NotificationsPage extends StatelessWidget {
                     if (!isRead) {
                       controller.markAsRead(notification.id);
                     }
-                    // Aquí podrías navegar a una vista relacionada si es aplicable
-                    // ej: Get.to(() => ListingDetailPage(listingId: notification.relatedListingId));
-                    print("Notificación '${notification.id}' pulsada.");
+
+                    if ((notification.type == 'sale_made' || notification.type == 'purchase_confirmation') &&
+                        notification.relatedBuyerId != null && notification.relatedBuyerId!.isNotEmpty &&
+                        notification.relatedBuyerName != null && notification.relatedBuyerName!.isNotEmpty) {
+   
+                      if (!authController.isUserLoggedIn) {
+                        Get.snackbar("Acción Requerida", "Debes iniciar sesión para ver perfiles.");
+                        return;
+                      }
+                      
+                      Get.to(() => SellerProfilePage(
+                            sellerId: notification.relatedBuyerId!,
+                            sellerName: notification.relatedBuyerName!, 
+                          ));
+                    } else if (notification.type == 'new_message') {
+                      print("Notificación de nuevo mensaje pulsada. ID relacionado: ${notification.relatedBuyerId}");
+                    } else {
+                      print("Notificación '${notification.id}' de tipo '${notification.type}' pulsada. No hay acción de navegación definida.");
+                    }
                   },
                 ),
               );

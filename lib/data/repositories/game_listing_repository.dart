@@ -1,11 +1,9 @@
-// lib/data/repositories/game_listing_repository.dart
 import 'dart:io';
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart' as appwrite_models;
 import 'package:proyecto_final/core/constants/appwrite_constants.dart';
 import 'package:proyecto_final/model/game_listing_model.dart';
 
-// Enum para opciones de ordenamiento
 enum PriceSortOption { none, lowestFirst, highestFirst }
 
 class GameListingRepository {
@@ -71,7 +69,7 @@ class GameListingRepository {
   Future<List<GameListingModel>> getGameListings(
       {String? searchQuery,
       PriceSortOption sortOption = PriceSortOption.none,
-      String? sellerId // Para obtener listados de un vendedor específico
+      String? sellerId 
       }) async {
     try {
       List<String> queries = [];
@@ -83,7 +81,7 @@ class GameListingRepository {
       if (sortOption == PriceSortOption.none && (sellerId == null || sellerId.isEmpty)) {
         queries.add(Query.orderDesc('\$createdAt'));
       } else if (sortOption == PriceSortOption.none && sellerId != null && sellerId.isNotEmpty) {
-         queries.add(Query.orderDesc('\$createdAt')); // O un orden específico para la página del vendedor
+         queries.add(Query.orderDesc('\$createdAt'));
       }
 
 
@@ -96,17 +94,8 @@ class GameListingRepository {
       } else if (sortOption == PriceSortOption.highestFirst) {
         queries.add(Query.orderDesc('price'));
       }
-      
-      // --- INICIO DE LA MODIFICACIÓN TEMPORAL PARA DIAGNÓSTICO ---
-      // Filtra los artículos "vendidos" de la navegación general.
-      // Si estamos buscando para un vendedor específico (por ejemplo, su página de perfil),
-      // podríamos querer mostrar sus artículos 'disponibles' y 'vendidos'.
-      // Si es navegación general (sellerId es nulo), solo queremos 'disponibles'.
       if (sellerId == null || sellerId.isEmpty) { 
-        // queries.add(Query.equal('status', 'available')); // <<--- LÍNEA COMENTADA TEMPORALMENTE
       }
-      // --- FIN DE LA MODIFICACIÓN TEMPORAL PARA DIAGNÓSTICO ---
-
 
       print("[GameListingRepo.getGameListings] Queries for sellerId '$sellerId': $queries");
 
@@ -136,7 +125,7 @@ class GameListingRepository {
           .copyWith(
             sellerId: userId,
             imageUrl: uploadedFileId,
-            status: 'available' // Asegura que el estado se establezca
+            status: 'available' 
           )
           .toJson();
 

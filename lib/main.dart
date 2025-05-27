@@ -1,13 +1,8 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:appwrite/appwrite.dart';
-import 'package:intl/date_symbol_data_local.dart'; // Para formato de fechas
-
-// Configuración y Constantes
+import 'package:intl/date_symbol_data_local.dart'; 
 import 'package:proyecto_final/core/config/app_config.dart';
-
-// Repositorios
 import 'package:proyecto_final/data/repositories/auth_repository.dart';
 import 'package:proyecto_final/data/repositories/user_repository.dart';
 import 'package:proyecto_final/data/repositories/game_listing_repository.dart';
@@ -15,15 +10,11 @@ import 'package:proyecto_final/data/repositories/notification_repository.dart';
 import 'package:proyecto_final/data/repositories/purchase_history_repository.dart';
 import 'package:proyecto_final/data/repositories/chat_repository.dart'; 
 import 'package:proyecto_final/data/repositories/message_repository.dart'; 
-
-// Controladores
 import 'package:proyecto_final/controllers/auth_controller.dart';
 import 'package:proyecto_final/controllers/user_controller.dart';
 import 'package:proyecto_final/controllers/game_listing_controller.dart';
 import 'package:proyecto_final/controllers/notification_controller.dart';
 import 'package:proyecto_final/controllers/chat_controller.dart'; 
-
-// Páginas
 import 'package:proyecto_final/presentation/pages/start_page.dart';
 import 'package:proyecto_final/presentation/pages/home_page.dart';
 
@@ -37,9 +28,6 @@ void main() async {
   final storage = Storage(client);
   final realtime = Realtime(client);
 
-  // --- INYECCIÓN DE DEPENDENCIAS CON GetX ---
-
-  // 1. Repositorios
   Get.put(AuthRepository(account, storage));
   Get.put(UserRepository(databases));
   Get.put(GameListingRepository(databases, storage));
@@ -47,17 +35,9 @@ void main() async {
   Get.put(PurchaseHistoryRepository(databases));
   Get.put(ChatRepository(databases, Get.find<UserRepository>())); 
   Get.put(MessageRepository(databases, realtime));
-
-
-  // 2. Controladores 
   Get.put(GameListingController(repository: Get.find<GameListingRepository>()));
-  
-  // AuthController primero, ya que otros pueden depender de su estado de inicialización
   final AuthController authController = Get.put(AuthController(Get.find<AuthRepository>()));
-
-  // UserController necesita UserRepository
-  Get.put(UserController(Get.find<UserRepository>())); // CORREGIDO: Pasar como argumento posicional
-  
+  Get.put(UserController(Get.find<UserRepository>())); 
   Get.put(NotificationController(Get.find<NotificationRepository>()));
   Get.put(ChatController(Get.find<ChatRepository>(), Get.find<MessageRepository>()));
 
@@ -71,11 +51,8 @@ class MyAppLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Usar un FutureBuilder o un Obx para esperar a que AuthController termine su carga inicial
-    // Este Obx ya estaba en tu código original y debería funcionar bien.
     return Obx(() {
       Widget homeWidget;
-      // Muestra un loader solo si está cargando Y aún no hay usuario (estado inicial absoluto)
       if (authController.isLoading.value && authController.appwriteUser.value == null && authController.localUser.value == null) {
         homeWidget = const Scaffold(
           body: Center(child: CircularProgressIndicator()),
@@ -97,15 +74,15 @@ class MyAppLoader extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(
             seedColor: Colors.deepPurple,
             brightness: Brightness.dark,
-            primary: Colors.deepPurpleAccent, // Un morado más vibrante para elementos primarios
-            secondary: Colors.tealAccent,    // Un acento contrastante
-            error: Colors.redAccent[400],        // Un rojo fuerte para errores
-            surface: Colors.grey[850],       // Superficies de tarjetas, diálogos
+            primary: Colors.deepPurpleAccent,
+            secondary: Colors.tealAccent,   
+            error: Colors.redAccent[400],       
+            surface: Colors.grey[850],     
             onSurface: Colors.white,
-            background: Colors.grey[900],      // Fondo general de Scaffolds
+            background: Colors.grey[900],  
             onBackground: Colors.white,
           ),
-          scaffoldBackgroundColor: Colors.grey[900], // Fondo oscuro general
+          scaffoldBackgroundColor: Colors.grey[900],
           inputDecorationTheme: InputDecorationTheme(
             filled: true,
             fillColor: Colors.white.withOpacity(0.05),
@@ -148,16 +125,16 @@ class MyAppLoader extends StatelessWidget {
             elevation: 2,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            color: Colors.grey[850], // Un poco más claro que el fondo
-            margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0) // Margen por defecto para tarjetas
+            color: Colors.grey[850], 
+            margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0) 
           ),
           floatingActionButtonTheme: FloatingActionButtonThemeData(
             backgroundColor: Colors.tealAccent,
             foregroundColor: Colors.black87,
           ),
           appBarTheme: AppBarTheme(
-            backgroundColor: Colors.grey[900], // Consistente con el fondo del scaffold
-            elevation: 0, // Sin sombra para un look más plano si se desea
+            backgroundColor: Colors.grey[900], 
+            elevation: 0,
             titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
             iconTheme: const IconThemeData(color: Colors.white),
           ),

@@ -1,4 +1,3 @@
-// lib/data/repositories/user_repository.dart
 import 'package:appwrite/appwrite.dart';
 import 'package:proyecto_final/core/constants/appwrite_constants.dart';
 import 'package:proyecto_final/model/user_model.dart';
@@ -21,7 +20,7 @@ class UserRepository {
           "[UserRepository.getUserById] User document data: ${userDocument.data}");
 
       final data = Map<String, dynamic>.from(userDocument.data);
-      data['\$id'] = userDocument.$id;
+      data['\$id'] = userDocument.$id; 
       return UserModel.fromJson(data);
     } on AppwriteException catch (e) {
       if (e.code == 404) {
@@ -44,21 +43,21 @@ class UserRepository {
     required String email,
     String? profileImageId,
     String? defaultAddress,
-    double? latitude, // AÑADIDO
-    double? longitude, // AÑADIDO
+    double? latitude,    
+    double? longitude,   
   }) async {
     Map<String, dynamic> dataPayload = {
       'name': name,
       'email': email,
       'defaultAddress': defaultAddress,
-      'latitude': latitude, // AÑADIDO
-      'longitude': longitude, // AÑADIDO
+      'latitude': latitude,       
+      'longitude': longitude,    
       'profileImageId': profileImageId,
     };
 
     try {
       print(
-          "[UserRepository.createOrUpdatePublicUserProfile] Updating/Creating document for user $userId in ${AppwriteConstants.usersCollectionId}");
+          "[UserRepository.createOrUpdatePublicUserProfile] Updating/Creating document for user $userId with payload: $dataPayload");
       final userDoc = await databases.updateDocument(
         databaseId: AppwriteConstants.databaseId,
         collectionId: AppwriteConstants.usersCollectionId,
@@ -93,7 +92,6 @@ class UserRepository {
     }
   }
 
-  // MÉTODO RENOMBRADO Y ACTUALIZADO
   Future<UserModel?> updateUserLocationData({
     required String userId,
     String? address,
@@ -102,18 +100,18 @@ class UserRepository {
   }) async {
     try {
       print(
-          "[UserRepository] Actualizando datos de ubicación para $userId: Addr: $address, Lat: $latitude, Lon: $longitude");
+          "[UserRepository] updateUserLocationData para $userId: Addr: $address, Lat: $latitude, Lon: $longitude");
       await databases.updateDocument(
         databaseId: AppwriteConstants.databaseId,
         collectionId: AppwriteConstants.usersCollectionId,
         documentId: userId,
         data: {
-          'defaultAddress': address,
-          'latitude': latitude,
-          'longitude': longitude,
+          'defaultAddress': address, 
+          'latitude': latitude,    
+          'longitude': longitude,  
         },
       );
-      return getUserById(userId); // Re-fetch para obtener el modelo completo y actualizado
+      return getUserById(userId); 
     } catch (e) {
       print(
           "[UserRepository] Error actualizando datos de ubicación para $userId: $e");

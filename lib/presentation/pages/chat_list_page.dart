@@ -1,4 +1,3 @@
-// lib/presentation/pages/chat_list_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -6,7 +5,6 @@ import 'package:proyecto_final/controllers/auth_controller.dart';
 import 'package:proyecto_final/data/repositories/auth_repository.dart';
 import 'package:proyecto_final/controllers/chat_controller.dart';
 import 'package:proyecto_final/model/chat_model.dart';
-// Importaremos ChatMessagePage cuando la creemos
 import 'package:proyecto_final/presentation/pages/chat_message_page.dart'; 
 
 class ChatListPage extends StatelessWidget {
@@ -17,13 +15,8 @@ class ChatListPage extends StatelessWidget {
     final ChatController chatController = Get.find();
     final AuthController authController = Get.find();
     final String currentUserId = authController.currentUserId ?? '';
-
-    // Formateador de fecha para el último mensaje
     final DateFormat timeFormatter = DateFormat('hh:mm a', 'es_CO');
     final DateFormat dateFormatter = DateFormat('dd/MM/yy', 'es_CO');
-
-    // Llama a loadUserChats si no se ha hecho o para refrescar.
-    // chatController.loadUserChats(); // Opcional, onInit del controller ya lo hace.
 
     return Scaffold(
       appBar: AppBar(
@@ -66,15 +59,14 @@ class ChatListPage extends StatelessWidget {
             itemCount: chatController.chatList.length,
             separatorBuilder: (context, index) => Divider(
               height: 1,
-              indent: 70, // Para alinear con el texto después del avatar
+              indent: 70, 
               color: Theme.of(context).dividerColor.withOpacity(0.5),
             ),
             itemBuilder: (context, index) {
               final ChatModel chat = chatController.chatList[index];
               
-              // Determinar quién es el otro participante
               String otherParticipantName = 'Desconocido';
-              String? otherParticipantPhotoId; // Podría ser null
+              String? otherParticipantPhotoId; 
               int otherParticipantIndex = -1;
 
               if (chat.participants.length == 2 && chat.participantNames != null && chat.participantNames!.length == 2) {
@@ -91,8 +83,7 @@ class ChatListPage extends StatelessWidget {
                   }
                 }
               } else if (chat.participants.length == 1 && chat.participants[0] == currentUserId) {
-                // Chat consigo mismo o chat grupal donde solo queda 1 (manejar según tu lógica)
-                otherParticipantName = "Chat guardado"; // O algo similar
+                otherParticipantName = "Chat guardado"; 
               }
 
 
@@ -103,24 +94,15 @@ class ChatListPage extends StatelessWidget {
                 if (now.year == lastMsgDate.year &&
                     now.month == lastMsgDate.month &&
                     now.day == lastMsgDate.day) {
-                  lastMessageTimeDisplay = timeFormatter.format(lastMsgDate); // Solo hora si es hoy
+                  lastMessageTimeDisplay = timeFormatter.format(lastMsgDate);
                 } else {
-                  lastMessageTimeDisplay = dateFormatter.format(lastMsgDate); // Fecha si es otro día
+                  lastMessageTimeDisplay = dateFormatter.format(lastMsgDate); 
                 }
               }
               
               String displayPhotoUrl = "https://placehold.co/100x100/7F00FF/FFFFFF?text=${otherParticipantName.isNotEmpty ? otherParticipantName[0].toUpperCase() : '?'}";
               if (otherParticipantPhotoId != null && otherParticipantPhotoId.isNotEmpty) {
-                   // Usar AuthRepository para construir la URL de la imagen de perfil
-                   // Esto asume que AuthRepository tiene un método para obtener la URL de CUALQUIER fileId
-                   // o que la lógica para construir URLs está centralizada.
-                   // Por ahora, usamos el método del AuthController que es para el usuario actual.
-                   // Necesitaríamos un método más genérico o que el ChatModel ya tenga la URL.
-                   // Simplificación: usar el método del AuthController si el ID es del AuthController.
-                   // Para esta lista, es mejor que ChatModel ya tenga la URL o usar un placeholder.
-                   // La lógica de foto en ChatRepository.getOrCreateChat ya guarda el photoId.
-                   // Aquí podemos usar AuthRepository para construir la URL si tenemos el ID.
-                   final AuthRepository authRepo = Get.find(); // No ideal aquí, mejor pasar la URL o que el modelo la tenga
+                   final AuthRepository authRepo = Get.find(); 
                    displayPhotoUrl = authRepo.getProfilePictureUrl(otherParticipantPhotoId);
               }
 
@@ -129,9 +111,8 @@ class ChatListPage extends StatelessWidget {
                 leading: CircleAvatar(
                   radius: 28,
                   backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                  backgroundImage: NetworkImage(displayPhotoUrl), // Usar placeholder si es null o vacío
+                  backgroundImage: NetworkImage(displayPhotoUrl), 
                   onBackgroundImageError: (_, __) {
-                    // No hacer nada para que el child (letra) se muestre
                   },
                   child: (otherParticipantPhotoId == null || otherParticipantPhotoId.isEmpty || displayPhotoUrl.contains("placehold.co"))
                     ? Text(
@@ -157,9 +138,6 @@ class ChatListPage extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 onTap: () {
-                  // Navegar a la pantalla de mensajes para este chat
-                  // Pasamos el ChatModel completo o al menos el chatId,
-                  // el nombre y la foto del otro participante para el AppBar de ChatMessagePage.
                   String otherParticipantActualId = '';
                    if (otherParticipantIndex != -1 && chat.participants.length > otherParticipantIndex) {
                         otherParticipantActualId = chat.participants[otherParticipantIndex];
@@ -168,9 +146,9 @@ class ChatListPage extends StatelessWidget {
                   if (chat.id.isNotEmpty && otherParticipantActualId.isNotEmpty) {
                     Get.to(() => ChatMessagePage(
                           chatId: chat.id,
-                          otherUserId: otherParticipantActualId, // El ID real del otro usuario
+                          otherUserId: otherParticipantActualId, 
                           otherUserName: otherParticipantName,
-                          otherUserPhotoUrl: displayPhotoUrl, // O el ID para construirla de nuevo
+                          otherUserPhotoUrl: displayPhotoUrl, 
                         ));
                   } else {
                     Get.snackbar("Error", "No se pudo abrir el chat. Falta información.");

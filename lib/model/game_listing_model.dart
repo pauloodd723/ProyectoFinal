@@ -1,4 +1,3 @@
-// lib/model/game_listing_model.dart
 import 'package:proyecto_final/core/constants/appwrite_constants.dart';
 
 class GameListingModel {
@@ -10,7 +9,7 @@ class GameListingModel {
   final String? imageUrl;
   final String? description;
   final String? gameCondition;
-  final String status; // available, sold, etc.
+  final String status; 
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -25,7 +24,7 @@ class GameListingModel {
     this.imageUrl,
     this.description,
     this.gameCondition,
-    this.status = 'available', // Default status
+    this.status = 'available', 
     this.createdAt,
     this.updatedAt,
   });
@@ -40,7 +39,7 @@ class GameListingModel {
       imageUrl: json['imageUrl'],
       description: json['description'],
       gameCondition: json['gameCondition'],
-      status: json['status'] ?? 'available', // Ensure status is parsed
+      status: json['status'] ?? 'available',
       createdAt: json['\$createdAt'] != null
           ? DateTime.tryParse(json['\$createdAt'])
           : null,
@@ -59,12 +58,11 @@ class GameListingModel {
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (description != null) 'description': description,
       if (gameCondition != null) 'gameCondition': gameCondition,
-      'status': status, // Ensure status is included
+      'status': status,
     };
   }
 
   String? getDisplayImageUrl() {
-    // ... (no change to this method)
     print("--- [GameListingModel.getDisplayImageUrl] DEBUG ---");
     print("Intentando obtener URL para el objeto con título: '${this.title}'");
     print("Valor actual de this.imageUrl (debería ser un File ID): '${this.imageUrl}'");
@@ -114,7 +112,7 @@ class GameListingModel {
     String? imageUrl,
     String? description,
     String? gameCondition,
-    String? status, // Add status
+    String? status,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -127,7 +125,7 @@ class GameListingModel {
       imageUrl: imageUrl ?? this.imageUrl,
       description: description ?? this.description,
       gameCondition: gameCondition ?? this.gameCondition,
-      status: status ?? this.status, // Add status
+      status: status ?? this.status, 
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

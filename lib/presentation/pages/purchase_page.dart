@@ -1,4 +1,3 @@
-// lib/presentation/pages/purchase_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -9,8 +8,8 @@ import 'package:proyecto_final/controllers/notification_controller.dart';
 import 'package:proyecto_final/controllers/game_listing_controller.dart';
 import 'package:proyecto_final/data/repositories/purchase_history_repository.dart';
 import 'package:proyecto_final/presentation/pages/home_page.dart';
-import 'package:proyecto_final/model/user_model.dart'; // Necesario para UserModel
-import 'package:proyecto_final/data/repositories/user_repository.dart'; // Necesario para UserRepository
+import 'package:proyecto_final/model/user_model.dart'; 
+import 'package:proyecto_final/data/repositories/user_repository.dart'; 
 
 class PurchasePage extends StatefulWidget {
   final GameListingModel listing;
@@ -32,7 +31,7 @@ class _PurchasePageState extends State<PurchasePage> {
   final NotificationController _notificationController = Get.find();
   final GameListingController _gameListingController = Get.find();
   final PurchaseHistoryRepository _purchaseHistoryRepository = Get.find();
-  final UserRepository _userRepository = Get.find(); // Para obtener perfil del vendedor
+  final UserRepository _userRepository = Get.find(); 
 
   bool _isProcessingPayment = false;
 
@@ -199,7 +198,7 @@ class _PurchasePageState extends State<PurchasePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AspectRatio(
-              aspectRatio: 16 / 9, // CORREGIDO: Parámetro aspectRatio añadido
+              aspectRatio: 16 / 9,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12.0),
                 child: (imageUrl != null && imageUrl.isNotEmpty)
@@ -391,7 +390,6 @@ class _PurchasePageState extends State<PurchasePage> {
   }
 }
 
-// InputFormatters (deben estar fuera de la clase _PurchasePageState o en su propio archivo)
 class _CardNumberInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
@@ -418,17 +416,15 @@ class _ExpiryDateInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     var newText = newValue.text.replaceAll('/', ''); 
-    // var oldText = oldValue.text.replaceAll('/', ''); // No es necesario para esta lógica simple
 
-    if (newValue.selection.baseOffset == 0 && newValue.text.isEmpty) { // Permite borrar completamente
+    if (newValue.selection.baseOffset == 0 && newValue.text.isEmpty) { 
         return newValue;
     }
     
     var buffer = StringBuffer();
     for (int i = 0; i < newText.length; i++) {
       buffer.write(newText[i]);
-      if (i == 1 && newText.length > 1) { // Añadir '/' después del segundo dígito si hay más dígitos
-        buffer.write('/');
+      if (i == 1 && newText.length > 1) { 
       }
     }
 

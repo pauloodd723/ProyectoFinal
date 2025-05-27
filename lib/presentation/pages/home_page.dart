@@ -1,32 +1,26 @@
-// lib/presentation/pages/home_page.dart
-import 'package:flutter/material.dart' as material; // Usar prefijo para claridad
+import 'package:flutter/material.dart' as material; 
 import 'package:get/get.dart';
 import 'package:proyecto_final/controllers/auth_controller.dart';
 import 'package:proyecto_final/controllers/game_listing_controller.dart';
-import 'package:proyecto_final/data/repositories/game_listing_repository.dart'; // Importar para PriceSortOption
+import 'package:proyecto_final/data/repositories/game_listing_repository.dart';
 import 'package:proyecto_final/presentation/widgets/game_listing_item.dart';
 import 'package:proyecto_final/presentation/pages/add_listing_page.dart';
 import 'package:proyecto_final/presentation/pages/profile_page.dart';
 import 'package:proyecto_final/presentation/pages/login_page.dart';
-// NUEVOS IMPORTS
 import 'package:proyecto_final/controllers/notification_controller.dart';
 import 'package:proyecto_final/presentation/pages/notifications_page.dart';
-import 'package:proyecto_final/presentation/pages/chat_list_page.dart'; // IMPORTADO PARA EL BOTÓN DE MENSAJES
-
+import 'package:proyecto_final/presentation/pages/chat_list_page.dart'; 
 
 class HomePage extends material.StatelessWidget {
   HomePage({super.key});
 
   final GameListingController gameListingController = Get.find();
   final AuthController authController = Get.find();
-  final NotificationController notificationController = Get.find(); // Obtener NotificationController
+  final NotificationController notificationController = Get.find(); 
   final material.TextEditingController _searchController = material.TextEditingController();
 
   @override
   material.Widget build(material.BuildContext context) {
-    // NotificationController ya tiene lógica en onInit para cargar si el usuario está logueado.
-    // No es estrictamente necesario llamarlo aquí de nuevo a menos que haya un caso específico.
-
     return material.Scaffold(
       appBar: material.AppBar(
         title: const material.Text('GameShopX'),
@@ -52,9 +46,8 @@ class HomePage extends material.StatelessWidget {
               ),
             ],
           ),
-          // NUEVO BOTÓN DE MENSAJES
           material.IconButton(
-            icon: const material.Icon(material.Icons.chat_bubble_outline_rounded), // Icono para mensajes
+            icon: const material.Icon(material.Icons.chat_bubble_outline_rounded), 
             tooltip: 'Mis Mensajes',
             onPressed: () {
               if (authController.isUserLoggedIn) {
@@ -141,7 +134,7 @@ class HomePage extends material.StatelessWidget {
                         material.Text('Error: ${gameListingController.error.value}', textAlign: material.TextAlign.center),
                         const material.SizedBox(height: 10),
                         material.ElevatedButton(
-                            onPressed: () => gameListingController.fetchListings(forceRefresh: true), // Añadir forceRefresh
+                            onPressed: () => gameListingController.fetchListings(forceRefresh: true), 
                             child: const material.Text("Reintentar"))
                       ],
                     ),
@@ -166,7 +159,7 @@ class HomePage extends material.StatelessWidget {
                 onRefresh: () => gameListingController.fetchListings(
                   search: gameListingController.searchQuery.value,
                   sortOption: gameListingController.currentSortOption.value,
-                  forceRefresh: true // Añadir forceRefresh
+                  forceRefresh: true 
                 ),
                 child: material.ListView.builder(
                   itemCount: gameListingController.listings.length,

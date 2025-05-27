@@ -1,4 +1,3 @@
-// lib/presentation/widgets/game_listing_item.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -23,12 +22,9 @@ class GameListingItem extends StatelessWidget {
     final GameListingController gameListingController = Get.find();
     final ChatController chatController = Get.find();
     final bool isOwner = authController.currentUserId == listing.sellerId;
-
     final String? imageUrl = listing.getDisplayImageUrl();
 
-    // --- PRINT DE DIAGNÓSTICO ---
     print("[GameListingItem] Juego: ${listing.title}, Status: '${listing.status}', Es Dueño: $isOwner, Precio: ${listing.price}");
-    // --- FIN PRINT DE DIAGNÓSTICO ---
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
@@ -154,8 +150,8 @@ class GameListingItem extends StatelessWidget {
                   ),
                 ] else ...[ // Si NO es el dueño
                   TextButton.icon(
-                    icon: Icon(Icons.message_outlined, size: 18, color: Theme.of(context).colorScheme.secondary), // CAMBIADO
-                    label: Text('Contactar', style: TextStyle(color: Theme.of(context).colorScheme.secondary)), // CAMBIADO
+                    icon: Icon(Icons.message_outlined, size: 18, color: Theme.of(context).colorScheme.secondary),
+                    label: Text('Contactar', style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
                     onPressed: () async {
                       if (!authController.isUserLoggedIn) {
                         Get.snackbar("Acción Requerida", "Debes iniciar sesión para contactar al vendedor.", snackPosition: SnackPosition.BOTTOM);
@@ -202,15 +198,14 @@ class GameListingItem extends StatelessWidget {
                     },
                   ),
                   const Spacer(),
-                  // Lógica para el botón de Comprar o texto de Vendido
                   if (listing.status == 'available')
                     ElevatedButton.icon(
                       icon: const Icon(Icons.shopping_cart_checkout_rounded, size: 18),
                       label: const Text('Comprar'),
-                      onPressed: () { // Esta es la acción del botón comprar
+                      onPressed: () { 
                           if (!authController.isUserLoggedIn) {
                             Get.snackbar("Acción Requerida", "Debes iniciar sesión para comprar artículos.", snackPosition: SnackPosition.BOTTOM);
-                            return; // Importante: salir de la función aquí
+                            return; 
                           }
                           Get.to(() => PurchasePage(listing: listing));
                       },

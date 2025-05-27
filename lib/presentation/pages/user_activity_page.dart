@@ -1,4 +1,3 @@
-// lib/presentation/pages/user_activity_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -20,7 +19,6 @@ class _UserActivityPageState extends State<UserActivityPage> with SingleTickerPr
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    // Cargar la actividad del usuario cuando se inicializa la página
     _userController.loadUserActivity();
   }
 
@@ -87,7 +85,6 @@ class _UserActivityPageState extends State<UserActivityPage> with SingleTickerPr
                   'Precio: ${NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0).format(purchase.pricePaid)}'
               ),
               isThreeLine: true,
-              // Puedes añadir más detalles o un onTap si es necesario
             ),
           );
         },
@@ -122,7 +119,6 @@ class _UserActivityPageState extends State<UserActivityPage> with SingleTickerPr
                   'Precio: ${NumberFormat.currency(locale: 'es_CO', symbol: '\$', decimalDigits: 0).format(sale.pricePaid)}'
               ),
               isThreeLine: true,
-              // Puedes añadir más detalles o un onTap si es necesario
             ),
           );
         },

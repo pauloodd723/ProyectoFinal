@@ -1,13 +1,10 @@
-// lib/presentation/pages/midpoint_map_page.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-// import 'package:url_launcher/url_launcher.dart'; // Para atribuciones si las necesitas
 
-// TU CLAVE DE API DE MAPTILER
 const String MAPTILER_API_KEY = "bvPvMjGXGLI6n2cUv6PA";
-const String MAPTILER_MAP_STYLE = "streets-v2"; // Puedes cambiar el estilo (ej: basic-v2, outdoor-v2)
+const String MAPTILER_MAP_STYLE = "streets-v2"; 
 
 class MidpointMapPage extends StatefulWidget {
   final double userALatitude;
@@ -36,9 +33,10 @@ class MidpointMapPage extends StatefulWidget {
 }
 
 class _MidpointMapPageState extends State<MidpointMapPage> {
-  late MapController _mapController; // No necesita Completer con flutter_map
+  late MapController _mapController;
   List<Marker> _markers = [];
   late LatLng _midpointPosition;
+  final List<LatLng> _routePoints = []; 
 
   @override
   void initState() {
@@ -46,85 +44,93 @@ class _MidpointMapPageState extends State<MidpointMapPage> {
     _mapController = MapController();
     _midpointPosition = LatLng(widget.midpointLatitude, widget.midpointLongitude);
 
+    final userAPosition = LatLng(widget.userALatitude, widget.userALongitude);
+    final userBPosition = LatLng(widget.userBLatitude, widget.userBLongitude);
+
     _markers.addAll([
       Marker(
-        width: 120.0, // Ancho del widget del marcador
-        height: 70.0, // Alto del widget del marcador
-        point: LatLng(widget.userALatitude, widget.userALongitude),
-        child: _buildMarkerWidget(Icons.person_pin_circle, Colors.green, widget.userAName),
+        width: 120.0,
+        height: 70.0,
+        point: userAPosition,
+        child: _buildMarkerWidget(Icons.person_pin_circle_rounded, Colors.green, widget.userAName),
       ),
       Marker(
         width: 120.0,
         height: 70.0,
-        point: LatLng(widget.userBLatitude, widget.userBLongitude),
-        child: _buildMarkerWidget(Icons.person_pin_circle, Colors.blue, widget.userBName),
+        point: userBPosition,
+        child: _buildMarkerWidget(Icons.person_pin_circle_rounded, Colors.blue, widget.userBName),
       ),
       Marker(
         width: 120.0,
         height: 70.0,
         point: _midpointPosition,
-        child: _buildMarkerWidget(Icons.location_on, Colors.purple, "Punto Medio"),
+        child: _buildMarkerWidget(Icons.location_on_rounded, Colors.purple, "Punto Medio"),
       ),
     ]);
 
+    _routePoints.addAll([userAPosition, userBPosition]);
+
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) { // Asegurarse que el widget aún está montado
+      if (mounted) {
          _fitAllMarkersWithDelay();
       }
     });
   }
 
   Widget _buildMarkerWidget(IconData icon, Color color, String label) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.6),
-            borderRadius: BorderRadius.circular(4),
+    return Tooltip(
+      message: label,
+      child: Column(
+        mainAxisSize: MainAxisSize.min, 
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.65),
+              borderRadius: BorderRadius.circular(4),
+              boxShadow: const [
+                BoxShadow(color: Colors.black26, blurRadius: 2, offset: Offset(0,1))
+              ]
+            ),
+            child: Text(
+              label, 
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
           ),
-          child: Text(
-            label, 
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        Icon(icon, color: color, size: 35.0),
-      ],
+          Icon(icon, color: color, size: 35.0, shadows: const [Shadow(color: Colors.black38, blurRadius: 3)]),
+        ],
+      ),
     );
   }
   
   void _fitAllMarkersWithDelay() {
-    // Pequeño delay para asegurar que el mapa esté listo
     Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted && _mapController != null && _markers.isNotEmpty) {
+      if (mounted && _markers.isNotEmpty) {
         _fitAllMarkers();
       }
     });
   }
-
 
   void _fitAllMarkers() {
     if (_markers.isEmpty) return;
 
     List<LatLng> points = _markers.map((m) => m.point).toList();
     if (points.isEmpty) return;
-
-    // Crear un LatLngBounds a partir de los puntos
+    
     LatLngBounds bounds = LatLngBounds.fromPoints(points);
 
-    // Si todos los puntos son idénticos, LatLngBounds puede no funcionar bien.
-    // En ese caso, simplemente centrar en ese punto con un zoom razonable.
-    bool allSamePoint = points.every((p) => p.latitude == points.first.latitude && p.longitude == points.first.longitude);
+    bool allSamePoint = points.length > 1 && points.every((p) => p.latitude == points.first.latitude && p.longitude == points.first.longitude);
 
-    if (allSamePoint) {
-        _mapController.move(points.first, 15.0); // Zoom más cercano para un solo punto
+    if (allSamePoint || points.length == 1) {
+        _mapController.move(points.first, 13.0); 
     } else {
         _mapController.fitCamera(
             CameraFit.bounds(
                 bounds: bounds,
-                padding: const EdgeInsets.all(70.0), // Aumentar padding si es necesario
+                padding: const EdgeInsets.all(70.0), 
             )
         );
     }
@@ -132,14 +138,14 @@ class _MidpointMapPageState extends State<MidpointMapPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (MAPTILER_API_KEY == "TU_MAPTILER_API_KEY_AQUI" || MAPTILER_API_KEY.isEmpty) {
+    if (MAPTILER_API_KEY == "TU_MAPTILER_API_KEY_AQUI" || MAPTILER_API_KEY.isEmpty || MAPTILER_API_KEY == "bvPvMjGXGLI6n2cUv6PA" && MAPTILER_API_KEY.length < 10) { // Placeholder check
         return Scaffold(
             appBar: AppBar(title: const Text('Configuración Requerida')),
             body: const Center(
                 child: Padding(
                     padding: EdgeInsets.all(16.0),
                     child: Text(
-                        "Por favor, añade tu API Key de MapTiler en midpoint_map_page.dart para ver el mapa.",
+                        "Por favor, verifica tu API Key de MapTiler en midpoint_map_page.dart para ver el mapa.",
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 16, color: Colors.red),
                     ),
@@ -153,7 +159,7 @@ class _MidpointMapPageState extends State<MidpointMapPage> {
         title: const Text('Punto de Encuentro Sugerido'),
         actions: [
             IconButton(
-                icon: const Icon(Icons.zoom_out_map),
+                icon: const Icon(Icons.zoom_out_map_rounded),
                 tooltip: "Ajustar Zoom",
                 onPressed: _fitAllMarkers,
             )
@@ -163,26 +169,12 @@ class _MidpointMapPageState extends State<MidpointMapPage> {
         mapController: _mapController,
         options: MapOptions(
           initialCenter: _midpointPosition,
-          initialZoom: 6, // Se ajustará con fitCamera
-          // onTap: (tapPosition, point) => _fitAllMarkers(), // Opcional: Re-ajustar al tocar el mapa
+          initialZoom: 6,
         ),
         children: [
           TileLayer(
             urlTemplate: 'https://api.maptiler.com/maps/$MAPTILER_MAP_STYLE/{z}/{x}/{y}.png?key=$MAPTILER_API_KEY',
-            userAgentPackageName: 'com.tuempresa.proyecto_final', // CAMBIA ESTO a tu package name real
-            // Opcional: Atribuciones (Requerido por MapTiler y OpenStreetMap)
-            // RichAttributionWidget(
-            //   attributions: [
-            //     TextSourceAttribution(
-            //       'MapTiler',
-            //       onTap: () => launchUrl(Uri.parse('https://www.maptiler.com/copyright/')),
-            //     ),
-            //     TextSourceAttribution(
-            //       'OpenStreetMap contributors',
-            //       onTap: () => launchUrl(Uri.parse('https://openstreetmap.org/copyright')),
-            //     ),
-            //   ],
-            // ),
+            userAgentPackageName: 'com.tuempresa.proyecto_final', 
           ),
           MarkerLayer(markers: _markers),
         ],

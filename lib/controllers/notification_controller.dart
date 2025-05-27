@@ -1,16 +1,15 @@
-// lib/controllers/notification_controller.dart
 import 'package:get/get.dart';
 import 'package:proyecto_final/data/repositories/notification_repository.dart';
 import 'package:proyecto_final/model/notification_model.dart';
 import 'package:proyecto_final/controllers/auth_controller.dart';
-import 'package:appwrite/models.dart' as appwrite_auth_models; // Para User de Appwrite Auth
-import 'package:proyecto_final/data/repositories/user_repository.dart'; // Para obtener datos del vendedor
-import 'package:proyecto_final/model/user_model.dart'; // Para UserModel de tu colección 'users'
+import 'package:appwrite/models.dart' as appwrite_auth_models; 
+import 'package:proyecto_final/data/repositories/user_repository.dart';
+import 'package:proyecto_final/model/user_model.dart'; 
 
 class NotificationController extends GetxController {
   final NotificationRepository _repository;
   final AuthController _authController = Get.find<AuthController>();
-  final UserRepository _userRepository = Get.find<UserRepository>(); // Inyectar UserRepository
+  final UserRepository _userRepository = Get.find<UserRepository>(); 
 
   NotificationController(this._repository);
 
@@ -84,11 +83,10 @@ class NotificationController extends GetxController {
     }
   }
 
-  // Notificación para el VENDEDOR cuando se realiza una venta
   Future<void> sendSaleNotificationToSeller({
-    required String sellerId,    // ID del vendedor
-    required String buyerId,     // ID del comprador
-    required String buyerName,   // Nombre del comprador
+    required String sellerId,    
+    required String buyerId,   
+    required String buyerName,  
     required String listingId,
     required String listingTitle,
   }) async {
@@ -96,7 +94,7 @@ class NotificationController extends GetxController {
       String message = "$buyerName ha comprado tu juego: '$listingTitle'. ¡Prepara la entrega!";
       
       await _repository.createNotification(
-        recipientId: sellerId, // Notificación para el vendedor
+        recipientId: sellerId, 
         type: "sale_made",
         message: message,
         relatedListingId: listingId,
@@ -109,12 +107,11 @@ class NotificationController extends GetxController {
     }
   }
 
-  // Notificación para el COMPRADOR después de una compra
   Future<void> sendPurchaseConfirmationToBuyer({
     required String buyerId,
     required String listingId,
     required String listingTitle,
-    required String sellerId, // Para obtener la dirección del vendedor
+    required String sellerId, 
   }) async {
     try {
       UserModel? sellerProfile = await _userRepository.getUserById(sellerId);
@@ -132,7 +129,7 @@ class NotificationController extends GetxController {
         type: "purchase_confirmation",
         message: message,
         relatedListingId: listingId,
-        relatedBuyerId: sellerId, // ID del vendedor
+        relatedBuyerId: sellerId, 
         relatedBuyerName: sellerProfile?.username ?? "Vendedor",
       );
        print("[NotificationController] Notificación de confirmación de compra enviada al comprador $buyerId.");
@@ -141,7 +138,6 @@ class NotificationController extends GetxController {
     }
   }
 
-  // Notificación para el RECEPTOR de un nuevo mensaje de CHAT
   Future<void> sendNewMessageNotification({
     required String recipientId,
     required String senderId,
@@ -165,8 +161,8 @@ class NotificationController extends GetxController {
         type: "new_message",
         message: notificationMessage,
         relatedListingId: listingId,
-        relatedBuyerId: senderId,    // Usamos este campo para el ID del remitente del mensaje
-        relatedBuyerName: senderName,// Usamos este campo para el nombre del remitente del mensaje
+        relatedBuyerId: senderId,  
+        relatedBuyerName: senderName,
       );
       print("[NotificationController] Notificación de nuevo mensaje enviada al destinatario $recipientId.");
     } catch (e) {

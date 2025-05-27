@@ -1,48 +1,39 @@
-// lib/controllers/user_controller.dart
-import 'package:flutter/foundation.dart'; // para kIsWeb
-import 'package:flutter/material.dart';  // Para Colors y otros widgets de UI si los usaras directamente
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';  
 import 'package:get/get.dart';
 import 'package:proyecto_final/data/repositories/user_repository.dart';
 import 'package:proyecto_final/model/user_model.dart';
 import 'package:proyecto_final/controllers/auth_controller.dart';
-import 'package:proyecto_final/data/repositories/auth_repository.dart'; // Para _authRepository
+import 'package:proyecto_final/data/repositories/auth_repository.dart'; 
 import 'package:proyecto_final/data/repositories/purchase_history_repository.dart';
 import 'package:proyecto_final/model/purchase_history_model.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-// TU CLAVE DE API DE OPENROUTESERVICE (Asegúrate que sea la correcta)
+
 const String OPENROUTESERVICE_API_KEY = "5b3ce3597851110001cf6248c481db0e564d40e7bee3c06a5c924711";
 
 class UserController extends GetxController {
   final UserRepository repository;
-  late final AuthRepository _authRepository; // Para obtener URL de imagen de perfil en fetchUserById
+  late final AuthRepository _authRepository; 
   late final PurchaseHistoryRepository _purchaseHistoryRepository;
   late final AuthController _authController;
 
   UserController(this.repository);
 
-  final RxBool isLoading = false.obs; // Para la lista general de usuarios (si se usa)
-  final RxString error = ''.obs; // Error general
-
-  // Para la página de perfil de un vendedor específico
+  final RxBool isLoading = false.obs; 
+  final RxString error = ''.obs; 
   final Rx<UserModel?> selectedUser = Rx<UserModel?>(null);
   final RxBool isLoadingSelectedUser = false.obs;
   final RxString selectedUserProfileImageUrl = ''.obs;
   final RxString selectedUserError = ''.obs;
-
-  // Para el proceso de actualizar la dirección del usuario actual
   final RxBool isLoadingUpdate = false.obs;
-
-
   final RxList<PurchaseHistoryModel> purchasedGames = <PurchaseHistoryModel>[].obs;
   final RxBool isLoadingPurchasedGames = false.obs;
   final RxString purchasedGamesError = ''.obs;
-
   final RxList<PurchaseHistoryModel> soldGames = <PurchaseHistoryModel>[].obs;
   final RxBool isLoadingSoldGames = false.obs;
   final RxString soldGamesError = ''.obs;
-
 
   @override
   void onInit() {
@@ -77,7 +68,7 @@ class UserController extends GetxController {
                 backgroundColor: Colors.orange, 
                 colorText: Colors.black
             );
-            // No intentar geocodificar si la clave es el placeholder o vacía
+
         } else {
             try {
               final Uri geocodeUri = Uri.parse(
@@ -90,8 +81,8 @@ class UserController extends GetxController {
                 final decodedResponse = json.decode(response.body);
                 if (decodedResponse['features'] != null && (decodedResponse['features'] as List).isNotEmpty) {
                   final coordinates = decodedResponse['features'][0]['geometry']['coordinates'];
-                  lon = (coordinates[0] as num).toDouble(); // Longitude is first
-                  lat = (coordinates[1] as num).toDouble(); // Latitude is second
+                  lon = (coordinates[0] as num).toDouble(); 
+                  lat = (coordinates[1] as num).toDouble(); 
                   print("[UserController] Dirección geocodificada: '$addressToSave' -> Lat: $lat, Lon: $lon");
                 } else {
                   print("[UserController] No se encontraron coordenadas para: '$addressToSave' usando OpenRouteService. Respuesta: ${response.body}");
@@ -108,16 +99,15 @@ class UserController extends GetxController {
         }
       }
 
-      // Llama al método en UserRepository que espera lat y lon
       UserModel? updatedUser = await repository.updateUserLocationData(
         userId: _authController.currentUserId!,
-        address: addressToSave, // La dirección de texto
-        latitude: lat,          // La latitud obtenida (puede ser null)
-        longitude: lon,         // La longitud obtenida (puede ser null)
+        address: addressToSave, 
+        latitude: lat,       
+        longitude: lon,      
       );
       
       if (updatedUser != null) {
-        _authController.updateLocalUser(updatedUser); // Actualizar el UserModel en AuthController
+        _authController.updateLocalUser(updatedUser); 
         Get.snackbar("Éxito", "Ubicación predeterminada actualizada.", snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.green, colorText: Colors.white);
       } else {
         Get.snackbar("Error de Actualización", "No se pudo actualizar la ubicación en la base de datos.", snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white);
@@ -142,7 +132,7 @@ class UserController extends GetxController {
         if (fetchedUser.profileImageId != null && fetchedUser.profileImageId!.isNotEmpty) {
           selectedUserProfileImageUrl.value = _authRepository.getProfilePictureUrl(fetchedUser.profileImageId!);
         } else {
-          String initials = fetchedUser.username.isNotEmpty ? fetchedUser.username[0].toUpperCase() : "S"; // Fallback a 'S' de Seller
+          String initials = fetchedUser.username.isNotEmpty ? fetchedUser.username[0].toUpperCase() : "S"; 
           selectedUserProfileImageUrl.value = "https://placehold.co/150x150/7F00FF/FFFFFF?text=$initials&font=roboto";
         }
       } else {

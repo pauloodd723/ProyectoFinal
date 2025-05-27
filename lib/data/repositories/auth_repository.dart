@@ -1,7 +1,6 @@
-// lib/data/repositories/auth_repository.dart
 import 'dart:io';
 import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/models.dart' as appwrite_models; // Asegúrate que 'as appwrite_models' esté si lo usas así en AuthController
+import 'package:appwrite/models.dart' as appwrite_models; 
 import 'package:proyecto_final/core/constants/appwrite_constants.dart';
 
 class AuthRepository {
@@ -9,15 +8,12 @@ class AuthRepository {
   final Storage storage;
 
   AuthRepository(this.account, this.storage);
-
-  // VERIFICA ESTE MÉTODO CUIDADOSAMENTE
-  Future<appwrite_models.User> createAccount({ // 1. DEBE DEVOLVER Future<appwrite_models.User>
+  Future<appwrite_models.User> createAccount({ 
     required String email,
     required String password,
     required String name,
   }) async {
     try {
-      // 2. DEBE TENER 'return await' aquí
       return await account.create(
         userId: ID.unique(),
         email: email,
@@ -26,8 +22,6 @@ class AuthRepository {
       );
     } catch (e) {
       print("Error en AuthRepository.createAccount: $e");
-      // Si el error es de Appwrite, como "user already exists" o "password too short",
-      // este rethrow lo enviará al AuthController para ser manejado.
       rethrow;
     }
   }

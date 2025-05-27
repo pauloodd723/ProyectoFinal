@@ -1,13 +1,11 @@
-// lib/presentation/pages/profile_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:proyecto_final/controllers/auth_controller.dart';
 import 'package:proyecto_final/controllers/game_listing_controller.dart';
-import 'package:proyecto_final/controllers/user_controller.dart'; // <--- IMPORTACIÓN AÑADIDA/ASEGURADA
+import 'package:proyecto_final/controllers/user_controller.dart'; 
 import 'package:proyecto_final/presentation/pages/edit_profile_page.dart';
 import 'package:proyecto_final/presentation/pages/login_page.dart';
 import 'package:proyecto_final/presentation/pages/user_activity_page.dart';
-// import 'package:proyecto_final/presentation/pages/user_listings_page.dart'; // Si tienes esta página
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});

@@ -1,14 +1,13 @@
-
 class NotificationModel {
-  final String id; // $id del documento de Appwrite
+  final String id; 
   final String recipientId;
-  final String type; // ej: "sale_made", "new_listing_followed_seller", "coupon_received"
+  final String type; 
   final String message;
   final String? relatedListingId;
-  final String? relatedBuyerId; // Quién realizó la acción que generó la notificación
-  final String? relatedBuyerName; // Nombre del que realizó la acción
+  final String? relatedBuyerId; 
+  final String? relatedBuyerName; 
   final bool isRead;
-  final DateTime createdAt; // Se parseará desde Appwrite $createdAt
+  final DateTime createdAt; 
 
   NotificationModel({
     required this.id,
@@ -34,12 +33,11 @@ class NotificationModel {
       isRead: json['isRead'] ?? false,
       createdAt: json['\$createdAt'] != null
           ? DateTime.parse(json['\$createdAt'])
-          : DateTime.now(), // Fallback, aunque $createdAt siempre debería existir
+          : DateTime.now(), 
     );
   }
 
   Map<String, dynamic> toJson() {
-    // Usado para crear notificaciones
     return {
       'recipientId': recipientId,
       'type': type,
@@ -48,7 +46,6 @@ class NotificationModel {
       if (relatedBuyerId != null) 'relatedBuyerId': relatedBuyerId,
       if (relatedBuyerName != null) 'relatedBuyerName': relatedBuyerName,
       'isRead': isRead,
-      // '$createdAt' y '$id' son manejados por Appwrite
     };
   }
 }

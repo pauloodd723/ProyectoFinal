@@ -1,14 +1,11 @@
-// lib/model/chat_model.dart
-
 class ChatModel {
-  final String id; // $id del documento de chat en Appwrite
-  final List<String> participants; // IDs de los usuarios en el chat
-  final List<String>? participantNames; // Nombres para mostrar en la lista de chats
-  final List<String>? participantPhotoIds; // IDs de las fotos de perfil para la lista de chats
+  final String id; 
+  final List<String> participants; 
+  final List<String>? participantNames;
+  final List<String>? participantPhotoIds; 
   final String? lastMessage;
   final DateTime? lastMessageTimestamp;
-  final String? listingId; // ID del anuncio relacionado, si existe
-  // Considera añadir Map<String, int> unreadCounts; para contadores por participante
+  final String? listingId;
 
   ChatModel({
     required this.id,
@@ -39,7 +36,6 @@ class ChatModel {
   }
 
   Map<String, dynamic> toJson() {
-    // Usado para crear o actualizar un chat
     return {
       'participants': participants,
       if (participantNames != null) 'participantNames': participantNames,
@@ -50,7 +46,6 @@ class ChatModel {
     };
   }
 
-  // Método copyWith para facilitar actualizaciones inmutables en el ChatController
   ChatModel copyWith({
     String? id,
     List<String>? participants,
