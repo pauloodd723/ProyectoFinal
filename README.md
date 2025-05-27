@@ -36,7 +36,7 @@ dependency_overrides:
 
   flutter_web_auth_2: ^4.0.0
 
-### Credenciales en appwrite
+## Credenciales en appwrite
 
 endpoint = 'https://cloud.appwrite.io/v1';
 
